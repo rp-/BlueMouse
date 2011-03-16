@@ -67,11 +67,11 @@ public class BlueMouse extends Activity {
 			Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
 			startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
 		} else {
-			if (mSerialService == null) setupChat();
+			if (mSerialService == null) setupSerial();
 		}
 	}
 	
-    private void setupChat() {
+    private void setupSerial() {
         Log.d(TAG, "setupChat()");
 
         // Initialize the array adapter for the conversation thread
@@ -170,20 +170,14 @@ public class BlueMouse extends Activity {
         case REQUEST_CONNECT_DEVICE_SECURE:
             // When DeviceListActivity returns with a device to connect
             if (resultCode == Activity.RESULT_OK) {
-                connectDevice(data, true);
-            }
-            break;
-        case REQUEST_CONNECT_DEVICE_INSECURE:
-            // When DeviceListActivity returns with a device to connect
-            if (resultCode == Activity.RESULT_OK) {
-                connectDevice(data, false);
+                connectDevice(data);
             }
             break;
         case REQUEST_ENABLE_BT:
             // When the request to enable Bluetooth returns
             if (resultCode == Activity.RESULT_OK) {
                 // Bluetooth is now enabled, so set up a chat session
-                setupChat();
+                setupSerial();
             } else {
                 // User did not enable Bluetooth or an error occurred
                 Log.d(TAG, "BT not enabled");
@@ -193,14 +187,14 @@ public class BlueMouse extends Activity {
         }
     }
 
-    private void connectDevice(Intent data, boolean secure) {
+    private void connectDevice(Intent data) {
         // Get the device MAC address
         String address = data.getExtras()
             .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
         // Get the BluetoothDevice object
         BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
         // Attempt to connect to the device
-        mSerialService.connect(device, secure);
+        mSerialService.connect(device);
     }
     
     public void scanButtonClicked(View v) {
