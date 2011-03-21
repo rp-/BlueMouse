@@ -31,23 +31,26 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
-import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
-import android.view.inputmethod.EditorInfo;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.maps.MapActivity;
+import com.google.android.maps.MapController;
+import com.google.android.maps.MapView;
+import com.google.android.maps.MyLocationOverlay;
+
 /**
  * This is the main Activity that displays the current chat session.
  */
-public class BlueMouse extends Activity {
+public class BlueMouse extends MapActivity {
     // Debugging
     private static final String TAG = "BlueMouse";
     private static final boolean D = true;
@@ -71,6 +74,11 @@ public class BlueMouse extends Activity {
     private TextView mTitle;
     private EditText mOutEditText;
     private Button mSendButton;
+    
+    // Map stuff
+    private MapController mapController;
+    private MapView mMapView;
+	private MyLocationOverlay mLocationOverlay;
 
     // Name of the connected device
     private String mConnectedDeviceName = null;
@@ -99,12 +107,22 @@ public class BlueMouse extends Activity {
         mTitle = (TextView) findViewById(R.id.title_left_text);
         mTitle.setText(R.string.app_name);
         mTitle = (TextView) findViewById(R.id.title_right_text);
+        
+		//map activity
+		mMapView = (MapView)findViewById(R.id.mapview);
+		mMapView.setBuiltInZoomControls(true);
+
+		mapController = mMapView.getController();
+
+		mLocationOverlay = new MyLocationOverlay(this, mMapView);
+		mMapView.getOverlays().add(mLocationOverlay);
+		mLocationOverlay.enableCompass();
 
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 500, 0, mLocationUpdateListener);
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, mLocationUpdateListener);
         mLocationManager.addNmeaListener(mNMEAListener);
         
         // If the adapter is null, then Bluetooth is not supported
@@ -134,6 +152,7 @@ public class BlueMouse extends Activity {
     @Override
     public synchronized void onResume() {
         super.onResume();
+        mLocationOverlay.enableMyLocation();
         if(D) Log.e(TAG, "+ ON RESUME +");
 
         // Performing this check in onResume() covers the case in which BT was
@@ -150,19 +169,10 @@ public class BlueMouse extends Activity {
 
     private void setupChat() {
         Log.d(TAG, "setupChat()");
-
-        // Initialize the compose field with a listener for the return key
-        mOutEditText = (EditText) findViewById(R.id.edit_text_out);
-        mOutEditText.setOnEditorActionListener(mWriteListener);
-
         // Initialize the send button with a listener that for click events
         mSendButton = (Button) findViewById(R.id.button_send);
         mSendButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
-                // Send a message using content of the edit text widget
-                TextView view = (TextView) findViewById(R.id.edit_text_out);
-                String message = view.getText().toString();
-                sendMessage(message);
             }
         });
 
@@ -175,6 +185,7 @@ public class BlueMouse extends Activity {
 
     @Override
     public synchronized void onPause() {
+    	mLocationOverlay.disableMyLocation();
         super.onPause();
         if(D) Log.e(TAG, "- ON PAUSE -");
     }
@@ -227,20 +238,6 @@ public class BlueMouse extends Activity {
             mOutEditText.setText(mOutStringBuffer);
         }
     }
-
-    // The action listener for the EditText widget, to listen for the return key
-    private TextView.OnEditorActionListener mWriteListener =
-        new TextView.OnEditorActionListener() {
-        public boolean onEditorAction(TextView view, int actionId, KeyEvent event) {
-            // If the action is a key-up event on the return key, send the message
-            if (actionId == EditorInfo.IME_NULL && event.getAction() == KeyEvent.ACTION_UP) {
-                String message = view.getText().toString();
-                sendMessage(message);
-            }
-            if(D) Log.i(TAG, "END onEditorAction");
-            return true;
-        }
-    };
 
     // The Handler that gets information back from the BluetoothSerialService
     private final Handler mHandler = new Handler() {
@@ -339,7 +336,7 @@ public class BlueMouse extends Activity {
         @Override
         public void onNmeaReceived(long timestamp, String nmea) {
             // TODO Auto-generated method stub
-       		if(D) Log.v(TAG, nmea);
+       		//if(D) Log.v(TAG, nmea);
        		mSerialService.write(nmea.getBytes());
         }
 
@@ -391,5 +388,11 @@ public class BlueMouse extends Activity {
 
 		}
    };
+
+
+	@Override
+	protected boolean isRouteDisplayed() {
+		return false;
+	}
 
 }
