@@ -19,6 +19,8 @@ package com.oldsch00l.BlueMouse;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.UUID;
 
 import android.bluetooth.BluetoothAdapter;
@@ -43,10 +45,11 @@ public class BluetoothSerialService {
     private static final boolean D = true;
 
     // Name for the SDP record when creating server socket
-    private static final String NAME = "BluetoothChat";
+    private static final String NAME = "SPP slave";
 
     // Unique UUID for this application
-    private static final UUID MY_UUID = UUID.fromString("fa87c0d0-afac-11de-8a39-0800200c9a66");
+    private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); //SPP uuid
+    //private static final UUID MY_UUID = UUID.fromString("551fb220-5329-11e0-b8af-0800200c9a66"); //SPP uuid
 
     // Member fields
     private final BluetoothAdapter mAdapter;
@@ -217,6 +220,10 @@ public class BluetoothSerialService {
         bundle.putString("Toast", "Device connection was lost");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
+        
+        //restart accept thread
+        mAcceptThread = new AcceptThread();
+        mAcceptThread.start();
     }
 
     /**
@@ -233,9 +240,35 @@ public class BluetoothSerialService {
 
             // Create a new listening server socket
             try {
-                tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
-            } catch (IOException e) {
-                Log.e(TAG, "listen() failed", e);
+//                tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
+            	Method m = mAdapter.getClass().getMethod("listenUsingRfcommOn", new Class[] { int.class });
+            	tmp = (BluetoothServerSocket) m.invoke(mAdapter, 1);
+            }
+//            catch (IOException e) {
+//                Log.e(TAG, "create() failed", e);
+//            } 
+            catch (SecurityException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "create() failed", e);
+			} catch (NoSuchMethodException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "create() failed", e);
+			} catch (IllegalArgumentException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "create() failed", e);
+			} catch (IllegalAccessException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "create() failed", e);
+			} catch (InvocationTargetException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				Log.e(TAG, "create() failed", e);
+            } catch (Exception e) {
+            	Log.e(TAG, "create() failed", e);
             }
             mmServerSocket = tmp;
         }
@@ -311,7 +344,7 @@ public class BluetoothSerialService {
                 tmp = device.createRfcommSocketToServiceRecord(MY_UUID);
             } catch (IOException e) {
                 Log.e(TAG, "create() failed", e);
-            }
+			}
             mmSocket = tmp;
         }
 
@@ -397,8 +430,8 @@ public class BluetoothSerialService {
                     bytes = mmInStream.read(buffer);
 
                     // Send the obtained bytes to the UI Activity
-                    mHandler.obtainMessage(BlueMouse.MESSAGE_READ, bytes, -1, buffer)
-                            .sendToTarget();
+                    //mHandler.obtainMessage(BlueMouse.MESSAGE_READ, bytes, -1, buffer)
+                    //        .sendToTarget();
                 } catch (IOException e) {
                     Log.e(TAG, "disconnected", e);
                     connectionLost();
@@ -414,10 +447,11 @@ public class BluetoothSerialService {
         public void write(byte[] buffer) {
             try {
                 mmOutStream.write(buffer);
+                mmOutStream.flush();
 
                 // Share the sent message back to the UI Activity
-                mHandler.obtainMessage(BlueMouse.MESSAGE_WRITE, -1, -1, buffer)
-                        .sendToTarget();
+                //mHandler.obtainMessage(BlueMouse.MESSAGE_WRITE, -1, -1, buffer)
+                //        .sendToTarget();
             } catch (IOException e) {
                 Log.e(TAG, "Exception during write", e);
             }
