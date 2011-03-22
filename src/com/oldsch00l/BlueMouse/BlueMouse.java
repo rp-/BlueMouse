@@ -17,6 +17,7 @@
 package com.oldsch00l.BlueMouse;
 
 import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -42,6 +43,7 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
 import com.google.android.maps.MapController;
 import com.google.android.maps.MapView;
@@ -76,7 +78,7 @@ public class BlueMouse extends MapActivity {
     private Button mSendButton;
     
     // Map stuff
-    private MapController mapController;
+    private MapController mMapController;
     private MapView mMapView;
 	private MyLocationOverlay mLocationOverlay;
 
@@ -112,7 +114,8 @@ public class BlueMouse extends MapActivity {
 		mMapView = (MapView)findViewById(R.id.mapview);
 		mMapView.setBuiltInZoomControls(true);
 
-		mapController = mMapView.getController();
+		mMapController = mMapView.getController();
+		mMapController.setZoom(14);
 
 		mLocationOverlay = new MyLocationOverlay(this, mMapView);
 		mMapView.getOverlays().add(mLocationOverlay);
@@ -122,8 +125,9 @@ public class BlueMouse extends MapActivity {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
+        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, mLocationUpdateListener);
         mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, mLocationUpdateListener);
-        mLocationManager.addNmeaListener(mNMEAListener);
+        //mLocationManager.addNmeaListener(mNMEAListener);
         
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -343,31 +347,39 @@ public class BlueMouse extends MapActivity {
     };
 	
     private LocationListener mLocationUpdateListener = new LocationListener() {
+    	private boolean zoomToMe = true;
     	
    	 public void onLocationChanged(Location location) {
-//   		//$GPRMC,053117.000,V,4812.7084,N,01619.3522,E,0.14,237.29,070311,,,N*76
-//   		StringBuilder sbGPRMC = new StringBuilder();
-//   		
-//   		sbGPRMC.append("$GPRMC,");
-//   		sbGPRMC.append(HHMMSS.format(new Date(location.getTime())));
-//   		sbGPRMC.append(",A,");
-//   		sbGPRMC.append(location.getLatitude());
-//   		sbGPRMC.append(",");
-//   		sbGPRMC.append("N,");
-//   		sbGPRMC.append(location.getLongitude());
-//   		sbGPRMC.append(",E,");
-//   		sbGPRMC.append(location.getSpeed());
-//   		sbGPRMC.append(",");
-//   		sbGPRMC.append(location.getBearing());
-//   		sbGPRMC.append(",");
-//   		sbGPRMC.append(DDMMYY.format(new Date(location.getTime())));
-//   		sbGPRMC.append(",,,");
-//   		sbGPRMC.append("A");
-//   		if(D) Log.v(TAG, sbGPRMC.toString());
-//   		sbGPRMC.append("\r\n");
-//
-//   		byte[] msg = sbGPRMC.toString().getBytes();
-//   		mSerialService.write(msg);
+   		 
+   		 if(zoomToMe) {
+   			 int latE6 = (int)(location.getLatitude() * 1E6);
+   			 int lonE6 = (int)(location.getLongitude() * 1E6);
+   			 mMapController.animateTo(new GeoPoint(latE6, lonE6));
+   			 zoomToMe = false;
+   		 }
+   		//$GPRMC,053117.000,V,4812.7084,N,01619.3522,E,0.14,237.29,070311,,,N*76
+   		StringBuilder sbGPRMC = new StringBuilder();
+   		
+   		sbGPRMC.append("$GPRMC,");
+   		sbGPRMC.append(HHMMSS.format(new Date(location.getTime())));
+   		sbGPRMC.append(",A,");
+   		sbGPRMC.append(location.getLatitude());
+   		sbGPRMC.append(",");
+   		sbGPRMC.append("N,");
+   		sbGPRMC.append(location.getLongitude());
+   		sbGPRMC.append(",E,");
+   		sbGPRMC.append(location.getSpeed());
+   		sbGPRMC.append(",");
+   		sbGPRMC.append(location.getBearing());
+   		sbGPRMC.append(",");
+   		sbGPRMC.append(DDMMYY.format(new Date(location.getTime())));
+   		sbGPRMC.append(",,,");
+   		sbGPRMC.append("A");
+   		if(D) Log.v(TAG, sbGPRMC.toString());
+   		sbGPRMC.append("\r\n");
+
+   		byte[] msg = sbGPRMC.toString().getBytes();
+   		mSerialService.write(msg);
    	 }
 
 		@Override
@@ -378,8 +390,7 @@ public class BlueMouse extends MapActivity {
 
 		@Override
 		public void onProviderEnabled(String provider) {
-			// TODO Auto-generated method stub
-
+			zoomToMe = true;
 		}
 
 		@Override
