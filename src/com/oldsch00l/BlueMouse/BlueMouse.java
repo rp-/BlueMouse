@@ -16,6 +16,7 @@
 
 package com.oldsch00l.BlueMouse;
 
+import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
@@ -349,38 +350,19 @@ public class BlueMouse extends MapActivity {
     private LocationListener mLocationUpdateListener = new LocationListener() {
     	private boolean zoomToMe = true;
     	
-   	 public void onLocationChanged(Location location) {
-   		 
-   		 if(zoomToMe) {
-   			 int latE6 = (int)(location.getLatitude() * 1E6);
-   			 int lonE6 = (int)(location.getLongitude() * 1E6);
-   			 mMapController.animateTo(new GeoPoint(latE6, lonE6));
-   			 zoomToMe = false;
-   		 }
-   		//$GPRMC,053117.000,V,4812.7084,N,01619.3522,E,0.14,237.29,070311,,,N*76
-   		StringBuilder sbGPRMC = new StringBuilder();
-   		
-   		sbGPRMC.append("$GPRMC,");
-   		sbGPRMC.append(HHMMSS.format(new Date(location.getTime())));
-   		sbGPRMC.append(",A,");
-   		sbGPRMC.append(location.getLatitude());
-   		sbGPRMC.append(",");
-   		sbGPRMC.append("N,");
-   		sbGPRMC.append(location.getLongitude());
-   		sbGPRMC.append(",E,");
-   		sbGPRMC.append(location.getSpeed());
-   		sbGPRMC.append(",");
-   		sbGPRMC.append(location.getBearing());
-   		sbGPRMC.append(",");
-   		sbGPRMC.append(DDMMYY.format(new Date(location.getTime())));
-   		sbGPRMC.append(",,,");
-   		sbGPRMC.append("A");
-   		if(D) Log.v(TAG, sbGPRMC.toString());
-   		sbGPRMC.append("\r\n");
-
-   		byte[] msg = sbGPRMC.toString().getBytes();
-   		mSerialService.write(msg);
-   	 }
+		public void onLocationChanged(Location location) {
+			 
+			if(zoomToMe) {
+				int latE6 = (int)(location.getLatitude() * 1E6);
+				int lonE6 = (int)(location.getLongitude() * 1E6);
+				mMapController.animateTo(new GeoPoint(latE6, lonE6));
+				zoomToMe = false;
+			}
+			
+			String sGPRMC = getNMEARMC(location);
+			byte[] msg = sGPRMC.getBytes();
+			mSerialService.write(msg);
+		}
 
 		@Override
 		public void onProviderDisabled(String provider) {
@@ -400,7 +382,53 @@ public class BlueMouse extends MapActivity {
 		}
    };
 
+	public static int getNMEAChecksum(final StringBuilder sbString) {
+		int checksum = 0;
 
+		for (int i = 0; i < sbString.length(); i++) {
+			if(sbString.charAt(i) != '*' && sbString.charAt(i) != '$')
+				checksum ^= sbString.charAt(i);
+		}
+		return checksum;
+	}
+	
+	public static String getNMEARMC(final Location loc) {
+   		//$GPRMC,053117.000,V,4812.7084,N,01619.3522,E,0.14,237.29,070311,,,N*76
+   		StringBuilder sbGPRMC = new StringBuilder();
+   		DecimalFormat locFormat = new DecimalFormat("####.####");
+   		
+   		char cNorthSouth = loc.getLatitude() >= 0 ? 'N' : 'S';
+   		char cEastWest = loc.getLongitude() >= 0 ? 'E' : 'W';
+   		
+   		DecimalFormat shortFormat = new DecimalFormat("##.#");
+   		
+   		sbGPRMC.append("$GPRMC,");
+   		sbGPRMC.append(HHMMSS.format(new Date(loc.getTime())));
+   		sbGPRMC.append(",A,");
+   		sbGPRMC.append(locFormat.format(loc.getLatitude()));
+   		sbGPRMC.append(",");
+   		sbGPRMC.append(cNorthSouth);
+   		sbGPRMC.append(",");
+   		sbGPRMC.append(locFormat.format(loc.getLongitude()));
+   		sbGPRMC.append(',');
+   		sbGPRMC.append(cEastWest);
+   		sbGPRMC.append(',');
+   		//sbGPRMC.append(location.getSpeed());
+   		sbGPRMC.append(",");
+   		sbGPRMC.append(shortFormat.format(loc.getBearing()));
+   		sbGPRMC.append(",");
+   		sbGPRMC.append(DDMMYY.format(new Date(loc.getTime())));
+   		sbGPRMC.append(",,,");
+   		sbGPRMC.append("A");
+   		sbGPRMC.append("*");
+   		int checksum = getNMEAChecksum(sbGPRMC);
+   		sbGPRMC.append(java.lang.Integer.toHexString(checksum));
+   		//if(D) Log.v(TAG, sbGPRMC.toString());
+   		sbGPRMC.append("\r\n");
+   		
+   		return sbGPRMC.toString();
+	}
+   
 	@Override
 	protected boolean isRouteDisplayed() {
 		return false;
