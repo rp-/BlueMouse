@@ -19,6 +19,17 @@
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
     >
+    <LinearLayout
+        android:orientation="horizontal"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        >
+        <Button android:id="@+id/button_send"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/send"
+        />
+    </LinearLayout>
 <!--	<com.google.android.maps.MapView
 	     xmlns:android="http://schemas.android.com/apk/res/android"
 	     android:id="@+id/mapview"
@@ -35,15 +46,4 @@
 	     android:clickable="true"
 	     android:apiKey="0-S3S1-tc6iL94F6v_O15_5pj6VGp3l1CinpVCA"
 	 />
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        >
-        <Button android:id="@+id/button_send"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/send"
-        />
-    </LinearLayout>
 </LinearLayout>
