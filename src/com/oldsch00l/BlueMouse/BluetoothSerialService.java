@@ -45,7 +45,7 @@ public class BluetoothSerialService {
     private static final boolean D = true;
 
     // Name for the SDP record when creating server socket
-    private static final String NAME = "SPP slave";
+    //private static final String NAME = "SPP slave";
 
     // Unique UUID for this application
     private static final UUID MY_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); //SPP uuid
@@ -64,6 +64,7 @@ public class BluetoothSerialService {
     public static final int STATE_LISTEN = 1;     // now listening for incoming connections
     public static final int STATE_CONNECTING = 2; // now initiating an outgoing connection
     public static final int STATE_CONNECTED = 3;  // now connected to a remote device
+    public static final int STATE_DISCONNECTED = 4; // client disconnected
 
     /**
      * Constructor. Prepares a new BluetoothChat session.
@@ -220,6 +221,8 @@ public class BluetoothSerialService {
         bundle.putString("Toast", "Device connection was lost");
         msg.setData(bundle);
         mHandler.sendMessage(msg);
+        
+        mHandler.obtainMessage(BlueMouse.MESSAGE_STATE_CHANGE, STATE_DISCONNECTED, -1).sendToTarget();
         
         //restart accept thread
         mAcceptThread = new AcceptThread();
