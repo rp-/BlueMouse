@@ -19,6 +19,10 @@ package com.oldsch00l.BlueMouse;
 import java.text.DecimalFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
@@ -40,7 +44,6 @@ import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
 import android.widget.Button;
-import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -75,7 +78,6 @@ public class BlueMouse extends MapActivity {
 
     // Layout Views
     private TextView mTitle;
-    private EditText mOutEditText;
     private Button mSendButton;
     
     // Map stuff
@@ -85,16 +87,21 @@ public class BlueMouse extends MapActivity {
 
     // Name of the connected device
     private String mConnectedDeviceName = null;
-    // String buffer for outgoing messages
-    private StringBuffer mOutStringBuffer;
     // Local Bluetooth adapter
     private BluetoothAdapter mBluetoothAdapter = null;
     // Member object for the chat services
     private BluetoothSerialService mSerialService = null;
     
+    //Timer stuff
+    private Timer mTimer;
+    private TimerTask mNMEARMCTask = new NMEARMCTask();
+    private TimerTask mNMEAGGATask = new NMEAGGATask();
+    
     //GPS stuff
-    LocationManager mLocationManager = null;
-
+    private LocationManager mLocationManager = null;
+    
+    //NMEA strings
+    private Location mCurLocation = null;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
@@ -183,9 +190,6 @@ public class BlueMouse extends MapActivity {
 
         // Initialize the BluetoothSerialService to perform bluetooth connections
         mSerialService = new BluetoothSerialService(this, mHandler);
-
-        // Initialize the buffer for outgoing messages
-        mOutStringBuffer = new StringBuffer("");
     }
 
     @Override
@@ -237,10 +241,6 @@ public class BlueMouse extends MapActivity {
             // Get the message bytes and tell the BluetoothSerialService to write
             byte[] send = message.getBytes();
             mSerialService.write(send);
-
-            // Reset out string buffer to zero and clear the edit text field
-            mOutStringBuffer.setLength(0);
-            mOutEditText.setText(mOutStringBuffer);
         }
     }
 
@@ -254,6 +254,13 @@ public class BlueMouse extends MapActivity {
                 switch (msg.arg1) {
                 case BluetoothSerialService.STATE_CONNECTED:
                     mTitle.setText(getString(R.string.title_connected_to, mConnectedDeviceName));
+                    mTimer = new Timer();
+                	mNMEAGGATask.cancel();
+                	mNMEARMCTask.cancel();
+                	mNMEAGGATask = new NMEAGGATask();
+                	mNMEARMCTask = new NMEARMCTask();
+                    mTimer.schedule(mNMEAGGATask, 0, 1000);
+                    mTimer.schedule(mNMEARMCTask, 0, 2500);
                     break;
                 case BluetoothSerialService.STATE_CONNECTING:
                     mTitle.setText(R.string.title_connecting);
@@ -262,6 +269,9 @@ public class BlueMouse extends MapActivity {
                 case BluetoothSerialService.STATE_NONE:
                     mTitle.setText(R.string.title_not_connected);
                     break;
+                case BluetoothSerialService.STATE_DISCONNECTED:
+                	mTimer.cancel();
+                	break;
                 }
                 break;
             case MESSAGE_DEVICE_NAME:
@@ -330,12 +340,6 @@ public class BlueMouse extends MapActivity {
         return false;
     }
     
-	public static SimpleDateFormat HHMMSS =
-		new SimpleDateFormat("HHmmss.000");
-	
-	public static SimpleDateFormat DDMMYY =
-		new SimpleDateFormat("ddMMyy");
-    
 	NmeaListener mNMEAListener = new NmeaListener(){
 
         @Override
@@ -347,9 +351,9 @@ public class BlueMouse extends MapActivity {
 
     };
 	
-    private LocationListener mLocationUpdateListener = new LocationListener() {
-    	private boolean zoomToMe = true;
-    	
+	private LocationListener mLocationUpdateListener = new LocationListener() {
+		private boolean zoomToMe = true;
+		
 		public void onLocationChanged(Location location) {
 			 
 			if(zoomToMe) {
@@ -359,29 +363,35 @@ public class BlueMouse extends MapActivity {
 				zoomToMe = false;
 			}
 			
-			String sGPRMC = getNMEARMC(location);
-			byte[] msg = sGPRMC.getBytes();
-			mSerialService.write(msg);
+			mCurLocation = new Location(location);
 		}
-
+	
 		@Override
 		public void onProviderDisabled(String provider) {
 			// TODO Auto-generated method stub
-
+	
 		}
-
+	
 		@Override
 		public void onProviderEnabled(String provider) {
 			zoomToMe = true;
 		}
-
+	
 		@Override
 		public void onStatusChanged(String provider, int status, Bundle extras) {
 			// TODO Auto-generated method stub
-
+	
 		}
-   };
+    };
 
+    /**
+     * Creates a NMEA checksum for a sentence.
+     * 
+     * The checksum is calculated by XOR every char value, between '$' and '*'(end),
+     * with the current sum. 
+     * @param sbString String to calculate the checksum.
+     * @return The checksum.
+     */
 	public static int getNMEAChecksum(final StringBuilder sbString) {
 		int checksum = 0;
 
@@ -392,24 +402,109 @@ public class BlueMouse extends MapActivity {
 		return checksum;
 	}
 	
+	public static DecimalFormat locFormat = new DecimalFormat("0000.####");
+	public static DecimalFormat shortFormat = new DecimalFormat("##.#");
+	
+	public static SimpleDateFormat HHMMSS =
+		new SimpleDateFormat("HHmmss.000", Locale.UK);
+	
+	public static SimpleDateFormat DDMMYY =
+		new SimpleDateFormat("ddMMyy", Locale.UK);
+	static {
+		HHMMSS.setTimeZone(TimeZone.getTimeZone("GMT"));
+		DDMMYY.setTimeZone(TimeZone.getTimeZone("GMT"));
+	}
+
+	/**
+	 * Creates a valid NMEA GGA Global Positioning System Fix Data.
+	 * 
+	 * Example:
+	 * $GPGGA,191410,4735.5634,N,00739.3538,E,1,04,4.4,351.5,M,48.0,M,,*45
+	 * @param loc object to transfer into a RMC sentence.
+	 * @return The GGA sentence as String.
+	 */
+	public static String getNMEAGGA(final Location loc) {
+		StringBuilder sbGPGGA = new StringBuilder();
+		
+   		char cNorthSouth = loc.getLatitude() >= 0 ? 'N' : 'S';
+   		char cEastWest = loc.getLongitude() >= 0 ? 'E' : 'W';
+		
+   		Date curDate = new Date();
+		sbGPGGA.append("$GPGGA,");
+		sbGPGGA.append(HHMMSS.format(curDate));
+		sbGPGGA.append(',');
+		sbGPGGA.append(getCorrectPosition(loc.getLatitude()));
+		sbGPGGA.append(",");
+		sbGPGGA.append(cNorthSouth);
+		sbGPGGA.append(',');
+   		sbGPGGA.append(getCorrectPosition(loc.getLongitude()));
+   		sbGPGGA.append(',');
+   		sbGPGGA.append(cEastWest);
+   		sbGPGGA.append(',');
+   		sbGPGGA.append('1'); //quality
+   		sbGPGGA.append(',');
+   		Bundle bundle = loc.getExtras();
+   		int satellites = bundle.getInt("satellites", 5);
+   		sbGPGGA.append(satellites);
+   		sbGPGGA.append(',');
+   		sbGPGGA.append(',');
+   		if( loc.hasAltitude() )
+   			sbGPGGA.append(loc.getAltitude());
+   		sbGPGGA.append(',');
+   		sbGPGGA.append('M');
+   		sbGPGGA.append(',');
+   		sbGPGGA.append(',');
+   		sbGPGGA.append('M');
+   		sbGPGGA.append(',');
+   		sbGPGGA.append("*");
+   		int checksum = getNMEAChecksum(sbGPGGA);
+   		sbGPGGA.append(java.lang.Integer.toHexString(checksum));
+   		sbGPGGA.append("\r\n");
+		
+		return sbGPGGA.toString();
+	}
+	
+	/**
+	 * Returns the correct NMEA position string.
+	 * 
+	 * Android location object returns the data in the format
+	 * that is not excpected by the NMEA data set. We have to multiple
+	 * the minutes and seconds by 60.
+	 * @param degree value from the Location.getLatitude() or Location.getLongitude()
+	 * @return The correct formated string for a NMEA data set.
+	 */
+	public static String getCorrectPosition(double degree) {
+		double val = degree - (int)degree;
+		val *= 60;
+		
+		val = (int)degree * 100 + val;
+		return  locFormat.format(val);
+	}
+	
+	/**
+	 * Creates a valid NMEA RMC Recommended Minimum Sentence C.
+	 * 
+	 * Example:
+	 * $GPRMC,053117.000,V,4812.7084,N,01619.3522,E,0.14,237.29,070311,,,N*76
+	 * @param loc object to transfer into a RMC sentence.
+	 * @return The RMC sentence as String.
+	 */
 	public static String getNMEARMC(final Location loc) {
    		//$GPRMC,053117.000,V,4812.7084,N,01619.3522,E,0.14,237.29,070311,,,N*76
    		StringBuilder sbGPRMC = new StringBuilder();
-   		DecimalFormat locFormat = new DecimalFormat("####.####");
    		
    		char cNorthSouth = loc.getLatitude() >= 0 ? 'N' : 'S';
    		char cEastWest = loc.getLongitude() >= 0 ? 'E' : 'W';
    		
-   		DecimalFormat shortFormat = new DecimalFormat("##.#");
-   		
+   		Date curDate = new Date();
    		sbGPRMC.append("$GPRMC,");
-   		sbGPRMC.append(HHMMSS.format(new Date(loc.getTime())));
+   		sbGPRMC.append(HHMMSS.format(curDate));
    		sbGPRMC.append(",A,");
-   		sbGPRMC.append(locFormat.format(loc.getLatitude()));
+   		sbGPRMC.append(getCorrectPosition(loc.getLatitude()));
    		sbGPRMC.append(",");
    		sbGPRMC.append(cNorthSouth);
    		sbGPRMC.append(",");
-   		sbGPRMC.append(locFormat.format(loc.getLongitude()));
+   		sbGPRMC.append(getCorrectPosition(loc.getLongitude()));
    		sbGPRMC.append(',');
    		sbGPRMC.append(cEastWest);
    		sbGPRMC.append(',');
@@ -417,7 +512,7 @@ public class BlueMouse extends MapActivity {
    		sbGPRMC.append(",");
    		sbGPRMC.append(shortFormat.format(loc.getBearing()));
    		sbGPRMC.append(",");
-   		sbGPRMC.append(DDMMYY.format(new Date(loc.getTime())));
+   		sbGPRMC.append(DDMMYY.format(curDate));
    		sbGPRMC.append(",,,");
    		sbGPRMC.append("A");
    		sbGPRMC.append("*");
@@ -433,5 +528,29 @@ public class BlueMouse extends MapActivity {
 	protected boolean isRouteDisplayed() {
 		return false;
 	}
+	
+	private class NMEAGGATask extends TimerTask {
 
+		@Override
+		public void run() {
+			if(mCurLocation != null) {
+				String sGGA = getNMEAGGA(mCurLocation);
+				byte[] msg = sGGA.getBytes();
+				mSerialService.write(msg);
+			}
+		}	
+	}
+	
+	private class NMEARMCTask extends TimerTask {
+
+		@Override
+		public void run() {
+			if(mCurLocation != null) {
+				String sRMC = getNMEARMC(mCurLocation);
+				byte[] msg = sRMC.getBytes();
+				mSerialService.write(msg);
+			}
+		}
+		
+	}
 }
