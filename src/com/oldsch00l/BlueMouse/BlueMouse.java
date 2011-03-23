@@ -95,6 +95,11 @@ public class BlueMouse extends MapActivity {
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
+    
+    // relase commands
+    private static final String FOCUS_CAMERA = "$PFOOR,0,1*45\r\n";
+    private static final String PRESS_SHUTTER = "$PFOOR,1,1*45\r\n";
+    private static final String RELEASE_SHUTTER = "$PFOOR,0,0*45\r\n";
 
     // Layout Views
     private TextView mTitle;
@@ -205,6 +210,7 @@ public class BlueMouse extends MapActivity {
         mSendButton = (Button) findViewById(R.id.button_send);
         mSendButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
+            	releaseCamera();
             }
         });
 
@@ -244,24 +250,32 @@ public class BlueMouse extends MapActivity {
             startActivity(discoverableIntent);
         }
     }
-
+    
     /**
-     * Sends a message.
-     * @param message  A string of text to send.
+     * Will send the correct codes to release the camera.
+     * 
+     * Right now this is very basic and just a proof of concept.
+     * 
+     * focus camera (half press):
+     * $PFOOR,0,1*45<CR><LF>
+     *
+     * press shutter (full press):
+     * $PFOOR,1,1*44<CR><LF>
+     *
+     * release shutter:
+     * $PFOOR,0,0*44<CR><LF>
      */
-    private void sendMessage(String message) {
-        // Check that we're actually connected before trying anything
+    private void releaseCamera() {
         if (mSerialService.getState() != BluetoothSerialService.STATE_CONNECTED) {
             Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
             return;
         }
-
-        // Check that there's actually something to send
-        if (message.length() > 0) {
-            // Get the message bytes and tell the BluetoothSerialService to write
-            byte[] send = message.getBytes();
-            mSerialService.write(send);
-        }
+        
+    	mTimer.schedule(new SendStringTask(FOCUS_CAMERA), 0);
+    	
+    	mTimer.schedule(new SendStringTask(PRESS_SHUTTER), 1000);
+    	
+    	mTimer.schedule(new SendStringTask(RELEASE_SHUTTER), 1500);
     }
 
     // The Handler that gets information back from the BluetoothSerialService
@@ -565,6 +579,21 @@ public class BlueMouse extends MapActivity {
 				byte[] msg = sRMC.getBytes();
 				mSerialService.write(msg);
 			}
+		}
+		
+	}
+	
+	private class SendStringTask extends TimerTask {
+		private String mString = "";
+		
+		public SendStringTask(String sData) {
+			mString = sData;
+		}
+
+		@Override
+		public void run() {
+			byte[] msg = mString.getBytes();
+			mSerialService.write(msg);
 		}
 		
 	}
