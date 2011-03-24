@@ -311,6 +311,8 @@ public class BlueMouse extends MapActivity {
             case MESSAGE_DEVICE_NAME:
                 // save the connected device's name
                 mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
+                if(mConnectedDeviceName.startsWith("Unleashed"))
+                	mConnectedDeviceName = mConnectedDeviceName.substring(0, mConnectedDeviceName.lastIndexOf(' '));
                 Toast.makeText(getApplicationContext(), "Connected to "
                                + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
                 break;
