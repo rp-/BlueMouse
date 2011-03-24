@@ -1,2 +1,4 @@
 glob:bin/*
 glob:gen/*
+syntax: glob
+local.properties
