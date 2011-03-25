@@ -98,8 +98,8 @@ public class BlueMouse extends MapActivity {
     
     // relase commands
     private static final String FOCUS_CAMERA = "$PFOOR,0,1*45\r\n";
-    private static final String PRESS_SHUTTER = "$PFOOR,1,1*45\r\n";
-    private static final String RELEASE_SHUTTER = "$PFOOR,0,0*45\r\n";
+    private static final String PRESS_SHUTTER = "$PFOOR,1,1*44\r\n";
+    private static final String RELEASE_SHUTTER = "$PFOOR,0,0*44\r\n";
 
     // Layout Views
     private TextView mTitle;
