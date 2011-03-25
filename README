@@ -6,7 +6,7 @@ Overview
 ========
 
 BlueMouse is an Android app that lets your mobile phone act like 
-a bluetooth GPS mouse. It creates a serial bluetooth channel on port 1
+a Bluetooth GPS mouse. It creates a serial Bluetooth channel on port 1
 and listens for incoming connections. If a client connects it will send out
 NMEA GGA and RMC sentences.
 
