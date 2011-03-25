@@ -126,6 +126,10 @@ public class BlueMouse extends MapActivity {
     private LocationManager mLocationManager = null;
     
     //NMEA strings
+    private String mCurRMCString = null;
+    private String mCurGGAString = null;
+    
+    //cur location
     private Location mCurLocation = null;
 
     @Override
@@ -159,8 +163,8 @@ public class BlueMouse extends MapActivity {
         
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
         mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, mLocationUpdateListener);
-        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, mLocationUpdateListener);
-        //mLocationManager.addNmeaListener(mNMEAListener);
+        //mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, mLocationUpdateListener);
+        mLocationManager.addNmeaListener(mNMEAListener);
         
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -377,7 +381,11 @@ public class BlueMouse extends MapActivity {
         public void onNmeaReceived(long timestamp, String nmea) {
             // TODO Auto-generated method stub
        		//if(D) Log.v(TAG, nmea);
-       		mSerialService.write(nmea.getBytes());
+        	if(nmea.startsWith("$GPRMC")) {
+        		mCurRMCString = nmea;
+        	} else if(nmea.startsWith("$GPGGA")) {
+        		mCurGGAString = nmea;
+        	}
         }
 
     };
@@ -564,11 +572,17 @@ public class BlueMouse extends MapActivity {
 
 		@Override
 		public void run() {
-			if(mCurLocation != null) {
-				String sGGA = getNMEAGGA(mCurLocation);
-				byte[] msg = sGGA.getBytes();
-				mSerialService.write(msg);
+			byte[] msg = null;
+			if(!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+					mCurGGAString == null) {
+				if(mCurLocation != null) {
+					String sGGA = getNMEAGGA(mCurLocation);
+					msg = sGGA.getBytes();
+				}
+			} else {
+				msg = mCurGGAString.getBytes();
 			}
+			mSerialService.write(msg);
 		}	
 	}
 	
@@ -576,11 +590,17 @@ public class BlueMouse extends MapActivity {
 
 		@Override
 		public void run() {
-			if(mCurLocation != null) {
-				String sRMC = getNMEARMC(mCurLocation);
-				byte[] msg = sRMC.getBytes();
-				mSerialService.write(msg);
+			byte[] msg = null;
+			if(!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
+					mCurRMCString == null) {
+				if(mCurLocation != null) {
+					String sRMC = getNMEARMC(mCurLocation);
+					msg = sRMC.getBytes();
+				}
+			} else {
+				msg = mCurRMCString.getBytes();
 			}
+			mSerialService.write(msg);
 		}
 		
 	}
