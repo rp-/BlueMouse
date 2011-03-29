@@ -249,6 +249,14 @@ public class BluetoothSerialService {
         mAcceptThread.start();
     }
 
+    private void logMessage(String sMessage) {
+        Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_LOG);
+        Bundle bundle = new Bundle();
+        bundle.putString("Log", sMessage);
+        msg.setData(bundle);
+        mHandler.sendMessage(msg);
+    }
+    
     /**
      * This thread runs while listening for incoming connections. It behaves
      * like a server-side client. It runs until a connection is accepted
@@ -266,6 +274,8 @@ public class BluetoothSerialService {
 //                tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME, MY_UUID);
             	Method m = mAdapter.getClass().getMethod("listenUsingRfcommOn", new Class[] { int.class });
             	tmp = (BluetoothServerSocket) m.invoke(mAdapter, 1);
+            	
+                logMessage("Created rfcomm channel on port 1");
             }
 //            catch (IOException e) {
 //                Log.e(TAG, "create() failed", e);
@@ -282,6 +292,10 @@ public class BluetoothSerialService {
 				Log.e(TAG, "create() failed", e);
             } catch (Exception e) {
             	Log.e(TAG, "create() failed", e);
+            }
+            
+            if(tmp == null) {
+            	logMessage("Unable to create rfcomm channel on port 1");
             }
             mmServerSocket = tmp;
         }

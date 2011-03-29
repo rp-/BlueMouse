@@ -29,7 +29,17 @@
             android:layout_height="wrap_content"
             android:text="@string/release_camera"
         />
+        <Button android:id="@+id/button_flip_view"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/flip_view"
+            android:onClick="flipView"
+        />
     </LinearLayout>
+    <ViewFlipper
+    	android:id="@+id/viewflipper"
+    	android:layout_width="fill_parent"
+	    android:layout_height="fill_parent">
 <!--	<com.google.android.maps.MapView
 	     xmlns:android="http://schemas.android.com/apk/res/android"
 	     android:id="@+id/mapview"
@@ -46,4 +56,9 @@
 	     android:clickable="true"
 	     android:apiKey="0-S3S1-tc6iL94F6v_O15_5pj6VGp3l1CinpVCA"
 	 />
+	 <ListView
+	 	android:id="@+id/logtextview"
+	 	android:layout_width="fill_parent"
+	 	android:layout_height="fill_parent" />
+	 </ViewFlipper>
 </LinearLayout>

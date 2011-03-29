@@ -63,9 +63,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
+import android.widget.ViewFlipper;
 
 import com.google.android.maps.GeoPoint;
 import com.google.android.maps.MapActivity;
@@ -87,10 +90,11 @@ public class BlueMouse extends MapActivity {
     public static final int MESSAGE_WRITE = 3;
     public static final int MESSAGE_DEVICE_NAME = 4;
     public static final int MESSAGE_TOAST = 5;
+	public static final int MESSAGE_LOG = 6;
 
     // Key names received from the BluetoothSerialService Handler
     public static final String DEVICE_NAME = "device_name";
-    public static final String TOAST = "toast";
+    public static final String TOAST = "Toast";
 
     // Intent request codes
     private static final int REQUEST_CONNECT_DEVICE = 1;
@@ -103,7 +107,9 @@ public class BlueMouse extends MapActivity {
 
     // Layout Views
     private TextView mTitle;
+    private ListView mLogListView;
     private Button mSendButton;
+    private ViewFlipper mViewFlipper;
     
     // Map stuff
     private MapController mMapController;
@@ -116,6 +122,9 @@ public class BlueMouse extends MapActivity {
     private BluetoothAdapter mBluetoothAdapter = null;
     // Member object for the chat services
     private BluetoothSerialService mSerialService = null;
+    
+    //log view strings
+    private ArrayAdapter<String> mLogArrayAdapter;
     
     //Timer stuff
     private Timer mTimer;
@@ -142,6 +151,8 @@ public class BlueMouse extends MapActivity {
         setContentView(R.layout.main);
         getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE, R.layout.custom_title);
 
+        mViewFlipper = (ViewFlipper) findViewById(R.id.viewflipper);
+        
         // Set up the custom title
         mTitle = (TextView) findViewById(R.id.title_left_text);
         mTitle.setText(R.string.app_name);
@@ -158,6 +169,10 @@ public class BlueMouse extends MapActivity {
 		mMapView.getOverlays().add(mLocationOverlay);
 		mLocationOverlay.enableCompass();
 
+		mLogArrayAdapter = new ArrayAdapter<String>(this, R.layout.loglistitem);
+		mLogListView = (ListView) findViewById(R.id.logtextview);
+		mLogListView.setAdapter(mLogArrayAdapter);
+		
         // Get local Bluetooth adapter
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         
@@ -281,6 +296,10 @@ public class BlueMouse extends MapActivity {
     	
     	mTimer.schedule(new SendStringTask(RELEASE_SHUTTER), 1500);
     }
+    
+    private void logMessage(String sMessage) {
+        mLogArrayAdapter.add(sMessage);
+    }
 
     // The Handler that gets information back from the BluetoothSerialService
     private final Handler mHandler = new Handler() {
@@ -292,6 +311,7 @@ public class BlueMouse extends MapActivity {
                 switch (msg.arg1) {
                 case BluetoothSerialService.STATE_CONNECTED:
                     mTitle.setText(getString(R.string.title_connected_to, mConnectedDeviceName));
+                    logMessage("Device " + mConnectedDeviceName + " connected.");
                     mTimer = new Timer();
                 	mNMEAGGATask.cancel();
                 	mNMEARMCTask.cancel();
@@ -308,6 +328,7 @@ public class BlueMouse extends MapActivity {
                     mTitle.setText(R.string.title_not_connected);
                     break;
                 case BluetoothSerialService.STATE_DISCONNECTED:
+                    logMessage("Device " + mConnectedDeviceName + " disconnected.");
                 	mTimer.cancel();
                 	break;
                 }
@@ -324,6 +345,9 @@ public class BlueMouse extends MapActivity {
                 Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
                                Toast.LENGTH_SHORT).show();
                 break;
+            case MESSAGE_LOG:
+            	mLogArrayAdapter.add(msg.getData().getString("Log"));
+            	break;
             }
         }
     };
@@ -373,6 +397,14 @@ public class BlueMouse extends MapActivity {
             return true;
         }
         return false;
+    }
+    
+    /**
+     * Button flip view was clicked
+     * @param v
+     */
+    public void flipView(View v) {
+    	mViewFlipper.showNext();
     }
     
 	NmeaListener mNMEAListener = new NmeaListener(){
