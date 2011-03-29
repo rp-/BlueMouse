@@ -282,12 +282,6 @@ public class BluetoothSerialService {
 				Log.e(TAG, "create() failed", e);
             } catch (Exception e) {
             	Log.e(TAG, "create() failed", e);
-            } finally {
-                Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_TOAST);
-                Bundle bundle = new Bundle();
-                bundle.putString("Toast", "Unable to create listening channel on port 1");
-                msg.setData(bundle);
-                mHandler.sendMessage(msg);
             }
             mmServerSocket = tmp;
         }
