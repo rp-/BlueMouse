@@ -17,4 +17,5 @@
     <item android:id="@+id/discoverable"
           android:icon="@android:drawable/ic_menu_mylocation"
           android:title="@string/discoverable" />
+    <item android:title="@string/log_view" android:id="@+id/menu_logview"></item>
 </menu>

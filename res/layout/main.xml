@@ -24,16 +24,10 @@
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
         >
-        <Button android:id="@+id/button_send"
-            android:layout_width="wrap_content"
+        <Button android:id="@+id/button_release_camera"
+            android:layout_width="fill_parent"
             android:layout_height="wrap_content"
             android:text="@string/release_camera"
-        />
-        <Button android:id="@+id/button_flip_view"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/log_view"
-            android:onClick="flipView"
         />
     </LinearLayout>
     <ViewFlipper

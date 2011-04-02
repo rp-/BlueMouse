@@ -226,7 +226,7 @@ public class BlueMouse extends MapActivity {
     private void setupChat() {
         Log.d(TAG, "setupChat()");
         // Initialize the send button with a listener that for click events
-        mSendButton = (Button) findViewById(R.id.button_send);
+        mSendButton = (Button) findViewById(R.id.button_release_camera);
         mSendButton.setOnClickListener(new OnClickListener() {
             public void onClick(View v) {
             	releaseCamera();
@@ -395,16 +395,11 @@ public class BlueMouse extends MapActivity {
             // Ensure this device is discoverable by others
             ensureDiscoverable();
             return true;
+        case R.id.menu_logview:
+        	mViewFlipper.showNext();
+        	return true;
         }
         return false;
-    }
-    
-    /**
-     * Button flip view was clicked
-     * @param v
-     */
-    public void flipView(View v) {
-    	mViewFlipper.showNext();
     }
     
 	NmeaListener mNMEAListener = new NmeaListener(){
