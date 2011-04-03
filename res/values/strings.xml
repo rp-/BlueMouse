@@ -5,7 +5,7 @@
     
 	<!--  BluetoothChat -->
     <string name="release_camera">Release camera</string>
-    <string name="log_view">log_view</string>
+    <string name="log_view">Log/Map View</string>
     <string name="not_connected">You are not connected to a device</string>
     <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving Bluetooth Chat.</string>
     <string name="title_connecting">connecting...</string>

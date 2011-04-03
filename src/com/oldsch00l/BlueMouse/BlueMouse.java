@@ -153,6 +153,14 @@ public class BlueMouse extends MapActivity {
 
         mViewFlipper = (ViewFlipper) findViewById(R.id.viewflipper);
         
+        //release button action
+        mSendButton = (Button) findViewById(R.id.button_release_camera);
+        mSendButton.setOnClickListener(new OnClickListener() {
+            public void onClick(View v) {
+            	releaseCamera();
+            }
+        });
+        
         // Set up the custom title
         mTitle = (TextView) findViewById(R.id.title_left_text);
         mTitle.setText(R.string.app_name);
@@ -177,9 +185,7 @@ public class BlueMouse extends MapActivity {
         mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
         
         mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, mLocationUpdateListener);
-        //mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, mLocationUpdateListener);
-        mLocationManager.addNmeaListener(mNMEAListener);
+        requestLocationUpdates();
         
         // If the adapter is null, then Bluetooth is not supported
         if (mBluetoothAdapter == null) {
@@ -187,6 +193,20 @@ public class BlueMouse extends MapActivity {
             finish();
             return;
         }
+    }
+    
+    private void requestLocationUpdates() {
+        mLocationOverlay.enableMyLocation();
+        mLocationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 2000, 0, mLocationUpdateListener);
+        mLocationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, 2000, 0, mLocationUpdateListener);
+        mLocationManager.addNmeaListener(mNMEAListener);
+    }
+    
+    private void stopLocationUpdates() {
+    	mLocationOverlay.disableCompass();
+    	mLocationOverlay.disableMyLocation();
+        mLocationManager.removeUpdates(mLocationUpdateListener);
+        mLocationManager.removeNmeaListener(mNMEAListener);
     }
 
     @Override
@@ -201,14 +221,14 @@ public class BlueMouse extends MapActivity {
             startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
         // Otherwise, setup the chat session
         } else {
-            if (mSerialService == null) setupChat();
+            if (mSerialService == null) setupBlueMouse();
         }
     }
 
     @Override
     public synchronized void onResume() {
         super.onResume();
-        mLocationOverlay.enableMyLocation();
+        requestLocationUpdates();
         if(D) Log.e(TAG, "+ ON RESUME +");
 
         // Performing this check in onResume() covers the case in which BT was
@@ -223,23 +243,14 @@ public class BlueMouse extends MapActivity {
         }
     }
 
-    private void setupChat() {
-        Log.d(TAG, "setupChat()");
-        // Initialize the send button with a listener that for click events
-        mSendButton = (Button) findViewById(R.id.button_release_camera);
-        mSendButton.setOnClickListener(new OnClickListener() {
-            public void onClick(View v) {
-            	releaseCamera();
-            }
-        });
-
+    private void setupBlueMouse() {
+        Log.d(TAG, "setupBlueMouse()");
         // Initialize the BluetoothSerialService to perform bluetooth connections
         mSerialService = new BluetoothSerialService(this, mHandler);
     }
 
     @Override
     public synchronized void onPause() {
-    	mLocationOverlay.disableMyLocation();
         super.onPause();
         if(D) Log.e(TAG, "- ON PAUSE -");
     }
@@ -254,8 +265,7 @@ public class BlueMouse extends MapActivity {
     public void onDestroy() {
         super.onDestroy();
         // Stop the Bluetooth chat services
-        mLocationManager.removeUpdates(mLocationUpdateListener);
-        mLocationManager.removeNmeaListener(mNMEAListener);
+        stopLocationUpdates();
         if (mSerialService != null) mSerialService.stop();
         if(D) Log.e(TAG, "--- ON DESTROY ---");
     }
@@ -297,8 +307,10 @@ public class BlueMouse extends MapActivity {
     	mTimer.schedule(new SendStringTask(RELEASE_SHUTTER), 1500);
     }
     
-    private void logMessage(String sMessage) {
-        mLogArrayAdapter.add(sMessage);
+    
+    public static SimpleDateFormat LogDate = new SimpleDateFormat("HH:mm:ss");
+    private void logMessage(String sMessage) {    	
+        mLogArrayAdapter.add( LogDate.format(new Date()) + "> " + sMessage);
     }
 
     // The Handler that gets information back from the BluetoothSerialService
@@ -346,7 +358,7 @@ public class BlueMouse extends MapActivity {
                                Toast.LENGTH_SHORT).show();
                 break;
             case MESSAGE_LOG:
-            	mLogArrayAdapter.add(msg.getData().getString("Log"));
+            	logMessage(msg.getData().getString("Log"));
             	break;
             }
         }
@@ -371,7 +383,7 @@ public class BlueMouse extends MapActivity {
             // When the request to enable Bluetooth returns
             if (resultCode == Activity.RESULT_OK) {
                 // Bluetooth is now enabled, so set up a chat session
-                setupChat();
+                setupBlueMouse();
             } else {
                 // User did not enable Bluetooth or an error occured
                 Log.d(TAG, "BT not enabled");
@@ -402,6 +414,11 @@ public class BlueMouse extends MapActivity {
         return false;
     }
     
+    public void zoomToPosition(View v) {
+    	GeoPoint location = mLocationOverlay.getMyLocation();
+		mMapController.animateTo(location);
+    }
+    
 	NmeaListener mNMEAListener = new NmeaListener(){
 
         @Override
@@ -429,7 +446,7 @@ public class BlueMouse extends MapActivity {
 				zoomToMe = false;
 			}
 			
-			mCurLocation = new Location(location);
+			mCurLocation = new Location(location); //copy location
 		}
 	
 		@Override
