@@ -410,6 +410,9 @@ public class BlueMouse extends MapActivity {
         case R.id.menu_logview:
         	mViewFlipper.showNext();
         	return true;
+        case R.id.menu_exit:
+        	finish();
+        	return true;
         }
         return false;
     }
