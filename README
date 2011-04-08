@@ -18,9 +18,23 @@ More information can be found on the foolography homepage
 Requirements
 ============
 
-* An android devices with Bluetooth, GPS or network location positioning
-* Android version 2.0 or above
-  Android version 1.* don't have a prober Bluetooth API.
+  * An android devices with Bluetooth, GPS or network location positioning
+  * Android version 2.0 or above
+    Android version 1.* don't have a prober Bluetooth API.
+
+Supported devices
+=================
+
+It depends more on the used Android ROM/firmware than on the actual devices,
+Currently known to work devices/software versions are:
+
+  * HTC G1/Dream with Cyanogenmod 6
+  * Google Nexus S with stock ROM
+  * HTC Vision/Desire Z with Cyanogenmod 7
+
+Known to not work:
+
+  * HTC Desire with stock ROM
 
 Instuctions for foolography unleashed
 =====================================
