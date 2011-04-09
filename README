@@ -25,7 +25,7 @@ Requirements
 Supported devices
 =================
 
-It depends more on the used Android ROM/firmware than on the actual devices,
+It depends more on the used Android ROM/firmware than on the actual device,
 Currently known to work devices/software versions are:
 
   * HTC G1/Dream with Cyanogenmod 6
@@ -35,6 +35,7 @@ Currently known to work devices/software versions are:
 Known to not work:
 
   * HTC Desire with stock ROM
+  * LG Optimus P990/2x stock ROM
 
 Instuctions for foolography unleashed
 =====================================
