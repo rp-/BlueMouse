@@ -535,7 +535,7 @@ public class BlueMouse extends MapActivity {
    		sbGPGGA.append(',');
    		sbGPGGA.append(',');
    		if( loc.hasAltitude() )
-   			sbGPGGA.append(loc.getAltitude());
+   			sbGPGGA.append(shortFormat.format(loc.getAltitude()));
    		sbGPGGA.append(',');
    		sbGPGGA.append('M');
    		sbGPGGA.append(',');
