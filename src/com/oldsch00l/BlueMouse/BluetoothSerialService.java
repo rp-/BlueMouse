@@ -204,15 +204,18 @@ public class BluetoothSerialService {
      * @see ConnectedThread#write(byte[])
      */
     public void write(byte[] out) {
-        // Create temporary object
-        ConnectedThread r;
-        // Synchronize a copy of the ConnectedThread
-        synchronized (this) {
-            if (mState != STATE_CONNECTED) return;
-            r = mConnectedThread;
-        }
-        // Perform the write unsynchronized
-        r.write(out);
+    	if(out != null)
+    	{
+	        // Create temporary object
+	        ConnectedThread r;
+	        // Synchronize a copy of the ConnectedThread
+	        synchronized (this) {
+	            if (mState != STATE_CONNECTED) return;
+	            r = mConnectedThread;
+	        }
+	        // Perform the write unsynchronized
+	        r.write(out);
+    	}
     }
 
     /**
