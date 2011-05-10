@@ -419,7 +419,12 @@ public class BlueMouse extends MapActivity {
     
     public void zoomToPosition(View v) {
     	GeoPoint location = mLocationOverlay.getMyLocation();
-		mMapController.animateTo(location);
+    	if(location != null) {
+    		mMapController.animateTo(location);
+    	}
+    	else {
+    		Toast.makeText(this, getString(R.string.currently_no_location), Toast.LENGTH_SHORT);
+    	}
     }
     
 	NmeaListener mNMEAListener = new NmeaListener(){
