@@ -506,7 +506,7 @@ public class BlueMouse extends MapActivity {
 	 * 
 	 * Example:
 	 * $GPGGA,191410,4735.5634,N,00739.3538,E,1,04,4.4,351.5,M,48.0,M,,*45
-	 * @param loc object to transfer into a RMC sentence.
+	 * @param loc object to transfer into a GGA sentence.
 	 * @return The GGA sentence as String.
 	 */
 	public static String getNMEAGGA(final Location loc) {
