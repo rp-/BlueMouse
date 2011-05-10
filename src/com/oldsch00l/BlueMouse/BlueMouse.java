@@ -620,6 +620,10 @@ public class BlueMouse extends MapActivity {
 		@Override
 		public void run() {
 			byte[] msg = null;
+			// if GPS provider isn't enabled and 
+			// we don't have an update from the NMEA listener
+			// create our own GGA sentence from the current location
+			// if available
 			if(!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
 					mCurGGAString == null) {
 				if(mCurLocation != null) {
@@ -638,6 +642,10 @@ public class BlueMouse extends MapActivity {
 		@Override
 		public void run() {
 			byte[] msg = null;
+			// if GPS provider isn't enabled and 
+			// we don't have an update from the NMEA listener
+			// create our own RMC sentence from the current location
+			// if available
 			if(!mLocationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) ||
 					mCurRMCString == null) {
 				if(mCurLocation != null) {
