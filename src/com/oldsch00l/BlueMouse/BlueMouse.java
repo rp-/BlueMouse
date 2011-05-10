@@ -564,7 +564,7 @@ public class BlueMouse extends MapActivity {
 		val *= 60;
 		
 		val = (int)degree * 100 + val;
-		return  locFormat.format(val);
+		return  locFormat.format(Math.abs(val));
 	}
 	
 	/**
