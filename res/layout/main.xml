@@ -40,22 +40,22 @@
     	android:id="@+id/viewflipper"
     	android:layout_width="fill_parent"
 	    android:layout_height="fill_parent">
-<!--	<com.google.android.maps.MapView
-	     xmlns:android="http://schemas.android.com/apk/res/android"
-	     android:id="@+id/mapview"
-	     android:layout_width="fill_parent"
-	     android:layout_height="fill_parent"
-	     android:clickable="true"
-	     android:apiKey="0-S3S1-tc6iI53JJclvDdZW9zCyxxjIXM8vD8Ig"
-	 /> -->
 	<com.google.android.maps.MapView
 	     xmlns:android="http://schemas.android.com/apk/res/android"
 	     android:id="@+id/mapview"
 	     android:layout_width="fill_parent"
 	     android:layout_height="fill_parent"
 	     android:clickable="true"
-	     android:apiKey="0-S3S1-tc6iL94F6v_O15_5pj6VGp3l1CinpVCA"
+	     android:apiKey="0-S3S1-tc6iI53JJclvDdZW9zCyxxjIXM8vD8Ig"
 	 />
+<!-- <com.google.android.maps.MapView
+	     xmlns:android="http://schemas.android.com/apk/res/android"
+	     android:id="@+id/mapview"
+	     android:layout_width="fill_parent"
+	     android:layout_height="fill_parent"
+	     android:clickable="true"
+	     android:apiKey="0-S3S1-tc6iL94F6v_O15_5pj6VGp3l1CinpVCA"
+	 /> -->
 	 <ListView
 	 	android:id="@+id/logtextview"
 	 	android:layout_width="fill_parent"
