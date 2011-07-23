@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
-    <string name="hello">Hello World, BlueMouse!</string>
     <string name="app_name">BlueMouse</string>
     
 	<!--  BlueMouse -->
     <string name="release_camera">Release camera</string>
     <string name="log_view">Log/Map View</string>
     <string name="not_connected">You are not connected to a device</string>
-    <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving Bluetooth Chat.</string>
+    <string name="bt_not_enabled_leaving">Bluetooth was not enabled. Leaving BlueMouse.</string>
     <string name="title_connecting">connecting...</string>
     <string name="title_connected_to">connected to <xliff:g id="device_name">%1$s</xliff:g></string>
     <string name="title_not_connected">not connected</string>
