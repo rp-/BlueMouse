@@ -15,50 +15,46 @@
 -->
 
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    >
-    <LinearLayout
-        android:orientation="horizontal"
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        >
-        <Button android:id="@+id/button_release_camera"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/release_camera"
-        />
-        <Button android:id="@+id/button_show_position"
-        	android:layout_width="wrap_content"
-        	android:layout_height="wrap_content"
-        	android:drawableLeft="@drawable/my_location"
-        	android:onClick="zoomToPosition"
-        />
-    </LinearLayout>
-    <ViewFlipper
-    	android:id="@+id/viewflipper"
-    	android:layout_width="fill_parent"
-	    android:layout_height="fill_parent">
+	android:orientation="vertical"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	>
+		<LinearLayout
+			android:orientation="horizontal"
+			android:layout_width="fill_parent"
+			android:layout_height="wrap_content"
+			>
+			<Button android:id="@+id/button_release_camera"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:text="@string/release_camera"
+			/>
+			<TextView
+				android:text=""
+				android:id="@+id/spacer"
+				android:layout_width="fill_parent"
+				android:layout_height="wrap_content"
+				android:layout_weight="1"/>
+			<Button android:id="@+id/button_show_position"
+				android:layout_width="wrap_content"
+				android:layout_height="wrap_content"
+				android:drawableLeft="@drawable/my_location"
+				android:onClick="zoomToPosition" android:layout_gravity="top"/>
+		</LinearLayout>
+<!-- 	<com.google.android.maps.MapView -->
+<!-- 	     xmlns:android="http://schemas.android.com/apk/res/android" -->
+<!-- 	     android:id="@+id/mapview" -->
+<!-- 	     android:layout_width="fill_parent" -->
+<!-- 	     android:layout_height="fill_parent" -->
+<!-- 	     android:clickable="true" -->
+<!-- 	     android:apiKey="0-S3S1-tc6iI53JJclvDdZW9zCyxxjIXM8vD8Ig" -->
+<!-- 	 /> -->
 	<com.google.android.maps.MapView
-	     xmlns:android="http://schemas.android.com/apk/res/android"
-	     android:id="@+id/mapview"
-	     android:layout_width="fill_parent"
-	     android:layout_height="fill_parent"
-	     android:clickable="true"
-	     android:apiKey="0-S3S1-tc6iI53JJclvDdZW9zCyxxjIXM8vD8Ig"
+		xmlns:android="http://schemas.android.com/apk/res/android"
+		android:id="@+id/mapview"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent"
+		android:clickable="true"
+		android:apiKey="0-S3S1-tc6iL94F6v_O15_5pj6VGp3l1CinpVCA"
 	 />
-<!-- <com.google.android.maps.MapView
-	     xmlns:android="http://schemas.android.com/apk/res/android"
-	     android:id="@+id/mapview"
-	     android:layout_width="fill_parent"
-	     android:layout_height="fill_parent"
-	     android:clickable="true"
-	     android:apiKey="0-S3S1-tc6iL94F6v_O15_5pj6VGp3l1CinpVCA"
-	 /> -->
-	 <ListView
-	 	android:id="@+id/logtextview"
-	 	android:layout_width="fill_parent"
-	 	android:layout_height="fill_parent" />
-	 </ViewFlipper>
 </LinearLayout>
