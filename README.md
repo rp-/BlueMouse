@@ -17,7 +17,7 @@ More information can be found on the foolography homepage
 Requirements
 ------------
 
-  * An android devices with Bluetooth, GPS or network location positioning
+  * An android device with Bluetooth, GPS or network location positioning
   * Android version 2.0 or above
     Android version 1.* don't have a prober Bluetooth API.
 
