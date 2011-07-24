@@ -41,6 +41,13 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
+import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -50,7 +57,12 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.content.Context;
 import android.content.Intent;
+import android.location.GpsStatus.NmeaListener;
+import android.location.Location;
+import android.location.LocationListener;
+import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
@@ -86,6 +98,24 @@ public class BlueMouseService extends Service {
 	private int mState;
 
 	// private ConnectThread mConnectThread;
+
+	private TimerTask mNMEARMCTask = new NMEARMCTask();
+	private TimerTask mNMEAGGATask = new NMEAGGATask();
+
+	// Timer stuff
+	private Timer mTimer;
+
+	// GPS stuff
+	private LocationManager mLocationManager = null;
+	private NmeaListener mNMEAListener = null;
+	private LocationListener mLocationUpdateListener = null;
+
+	// NMEA strings
+	private String mCurRMCString = null;
+	private String mCurGGAString = null;
+
+	// cur location
+	private Location mCurLocation = null;
 
 	// Constants that indicate the current connection state
 	public static final int STATE_NONE = 0; // we're doing nothing
@@ -221,6 +251,14 @@ public class BlueMouseService extends Service {
 		mHandler.sendMessage(msg);
 
 		setState(STATE_CONNECTED);
+
+		mNMEAGGATask.cancel();
+		mNMEARMCTask.cancel();
+		mNMEAGGATask = new NMEAGGATask();
+		mNMEARMCTask = new NMEARMCTask();
+		mTimer = new Timer();
+		mTimer.schedule(mNMEAGGATask, 0, 1000);
+		mTimer.schedule(mNMEARMCTask, 0, 2500);
 	}
 
 	/**
@@ -263,12 +301,16 @@ public class BlueMouseService extends Service {
 	private void connectionLost() {
 		setState(STATE_LISTEN);
 
+		if (mTimer != null) {
+			mTimer.cancel();
+		}
+
 		// Send a failure message back to the Activity
-		if(mCurrentDeviceName != null) {
+		if (mCurrentDeviceName != null) {
 			Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_TOAST);
 			Bundle bundle = new Bundle();
-			bundle.putString("Toast", String.format("%s:\nConnection to %s lost",
-					TAG, mCurrentDeviceName));
+			bundle.putString("Toast", String.format(
+					"%s:\nConnection to %s lost", TAG, mCurrentDeviceName));
 			msg.setData(bundle);
 			mHandler.sendMessage(msg);
 		}
@@ -512,6 +554,202 @@ public class BlueMouseService extends Service {
 	}
 
 	/**
+	 * Creates a NMEA checksum for a sentence.
+	 * 
+	 * The checksum is calculated by XOR every char value, between '$' and
+	 * '*'(end), with the current sum.
+	 * 
+	 * @param sbString
+	 *            String to calculate the checksum.
+	 * @return The checksum.
+	 */
+	public static int getNMEAChecksum(final StringBuilder sbString) {
+		int checksum = 0;
+
+		for (int i = 0; i < sbString.length(); i++) {
+			if (sbString.charAt(i) != '*' && sbString.charAt(i) != '$')
+				checksum ^= sbString.charAt(i);
+		}
+		return checksum;
+	}
+
+	public static DecimalFormat locFormat = new DecimalFormat("0000.####");
+	public static DecimalFormat shortFormat = new DecimalFormat("##.#");
+
+	public static SimpleDateFormat HHMMSS = new SimpleDateFormat("HHmmss.000",
+			Locale.UK);
+
+	public static SimpleDateFormat DDMMYY = new SimpleDateFormat("ddMMyy",
+			Locale.UK);
+	static {
+		HHMMSS.setTimeZone(TimeZone.getTimeZone("GMT"));
+		DDMMYY.setTimeZone(TimeZone.getTimeZone("GMT"));
+	}
+
+	/**
+	 * Creates a valid NMEA GGA Global Positioning System Fix Data.
+	 * 
+	 * Example:
+	 * $GPGGA,191410,4735.5634,N,00739.3538,E,1,04,4.4,351.5,M,48.0,M,,*45
+	 * 
+	 * @param loc
+	 *            object to transfer into a GGA sentence.
+	 * @return The GGA sentence as String.
+	 */
+	public static String getNMEAGGA(final Location loc) {
+		StringBuilder sbGPGGA = new StringBuilder();
+
+		char cNorthSouth = loc.getLatitude() >= 0 ? 'N' : 'S';
+		char cEastWest = loc.getLongitude() >= 0 ? 'E' : 'W';
+
+		Date curDate = new Date();
+		sbGPGGA.append("$GPGGA,");
+		sbGPGGA.append(HHMMSS.format(curDate));
+		sbGPGGA.append(',');
+		sbGPGGA.append(getCorrectPosition(loc.getLatitude()));
+		sbGPGGA.append(",");
+		sbGPGGA.append(cNorthSouth);
+		sbGPGGA.append(',');
+		sbGPGGA.append(getCorrectPosition(loc.getLongitude()));
+		sbGPGGA.append(',');
+		sbGPGGA.append(cEastWest);
+		sbGPGGA.append(',');
+		sbGPGGA.append('1'); // quality
+		sbGPGGA.append(',');
+		Bundle bundle = loc.getExtras();
+		int satellites = bundle.getInt("satellites", 5);
+		sbGPGGA.append(satellites);
+		sbGPGGA.append(',');
+		sbGPGGA.append(',');
+		if (loc.hasAltitude())
+			sbGPGGA.append(shortFormat.format(loc.getAltitude()));
+		sbGPGGA.append(',');
+		sbGPGGA.append('M');
+		sbGPGGA.append(',');
+		sbGPGGA.append(',');
+		sbGPGGA.append('M');
+		sbGPGGA.append(',');
+		sbGPGGA.append("*");
+		int checksum = getNMEAChecksum(sbGPGGA);
+		sbGPGGA.append(java.lang.Integer.toHexString(checksum));
+		sbGPGGA.append("\r\n");
+
+		return sbGPGGA.toString();
+	}
+
+	/**
+	 * Returns the correct NMEA position string.
+	 * 
+	 * Android location object returns the data in the format that is not
+	 * excpected by the NMEA data set. We have to multiple the minutes and
+	 * seconds by 60.
+	 * 
+	 * @param degree
+	 *            value from the Location.getLatitude() or
+	 *            Location.getLongitude()
+	 * @return The correct formated string for a NMEA data set.
+	 */
+	public static String getCorrectPosition(double degree) {
+		double val = degree - (int) degree;
+		val *= 60;
+
+		val = (int) degree * 100 + val;
+		return locFormat.format(Math.abs(val));
+	}
+
+	/**
+	 * Creates a valid NMEA RMC Recommended Minimum Sentence C.
+	 * 
+	 * Example:
+	 * $GPRMC,053117.000,V,4812.7084,N,01619.3522,E,0.14,237.29,070311,,,N*76
+	 * 
+	 * @param loc
+	 *            object to transfer into a RMC sentence.
+	 * @return The RMC sentence as String.
+	 */
+	public static String getNMEARMC(final Location loc) {
+		// $GPRMC,053117.000,V,4812.7084,N,01619.3522,E,0.14,237.29,070311,,,N*76
+		StringBuilder sbGPRMC = new StringBuilder();
+
+		char cNorthSouth = loc.getLatitude() >= 0 ? 'N' : 'S';
+		char cEastWest = loc.getLongitude() >= 0 ? 'E' : 'W';
+
+		Date curDate = new Date();
+		sbGPRMC.append("$GPRMC,");
+		sbGPRMC.append(HHMMSS.format(curDate));
+		sbGPRMC.append(",A,");
+		sbGPRMC.append(getCorrectPosition(loc.getLatitude()));
+		sbGPRMC.append(",");
+		sbGPRMC.append(cNorthSouth);
+		sbGPRMC.append(",");
+		sbGPRMC.append(getCorrectPosition(loc.getLongitude()));
+		sbGPRMC.append(',');
+		sbGPRMC.append(cEastWest);
+		sbGPRMC.append(',');
+		// sbGPRMC.append(location.getSpeed());
+		sbGPRMC.append(",");
+		sbGPRMC.append(shortFormat.format(loc.getBearing()));
+		sbGPRMC.append(",");
+		sbGPRMC.append(DDMMYY.format(curDate));
+		sbGPRMC.append(",,,");
+		sbGPRMC.append("A");
+		sbGPRMC.append("*");
+		int checksum = getNMEAChecksum(sbGPRMC);
+		sbGPRMC.append(java.lang.Integer.toHexString(checksum));
+		// if(D) Log.v(TAG, sbGPRMC.toString());
+		sbGPRMC.append("\r\n");
+
+		return sbGPRMC.toString();
+	}
+
+	private class NMEAGGATask extends TimerTask {
+
+		@Override
+		public void run() {
+			byte[] msg = null;
+			// if GPS provider isn't enabled and
+			// we don't have an update from the NMEA listener
+			// create our own GGA sentence from the current location
+			// if available
+			if (!mLocationManager
+					.isProviderEnabled(LocationManager.GPS_PROVIDER)
+					|| mCurGGAString == null) {
+				if (mCurLocation != null) {
+					String sGGA = getNMEAGGA(mCurLocation);
+					msg = sGGA.getBytes();
+				}
+			} else {
+				msg = mCurGGAString.getBytes();
+			}
+			write(msg);
+		}
+	}
+
+	private class NMEARMCTask extends TimerTask {
+
+		@Override
+		public void run() {
+			byte[] msg = null;
+			// if GPS provider isn't enabled and
+			// we don't have an update from the NMEA listener
+			// create our own RMC sentence from the current location
+			// if available
+			if (!mLocationManager
+					.isProviderEnabled(LocationManager.GPS_PROVIDER)
+					|| mCurRMCString == null) {
+				if (mCurLocation != null) {
+					String sRMC = getNMEARMC(mCurLocation);
+					msg = sRMC.getBytes();
+				}
+			} else {
+				msg = mCurRMCString.getBytes();
+			}
+			write(msg);
+		}
+
+	}
+
+	/**
 	 * Class for clients to access. Because we know this service always runs in
 	 * the same process as its clients, we don't need to deal with IPC.
 	 */
@@ -536,6 +774,42 @@ public class BlueMouseService extends Service {
 	public void onCreate() {
 		mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 
+		mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+
+		mLocationUpdateListener = new LocationListener() {
+
+			@Override
+			public void onLocationChanged(Location location) {
+				mCurLocation = new Location(location); // copy location
+			}
+
+			@Override
+			public void onProviderDisabled(String provider) {
+			}
+
+			@Override
+			public void onProviderEnabled(String provider) {
+			}
+
+			@Override
+			public void onStatusChanged(String provider, int status,
+					Bundle extras) {
+			}
+		};
+
+		mNMEAListener = new NmeaListener() {
+
+			@Override
+			public void onNmeaReceived(long timestamp, String nmea) {
+				if (nmea.startsWith("$GPRMC")) {
+					mCurRMCString = nmea;
+				} else if (nmea.startsWith("$GPGGA")) {
+					mCurGGAString = nmea;
+				}
+			}
+
+		};
+
 		// Display a notification about us starting. We put an icon in the
 		// status bar.
 		showNotification();
@@ -545,6 +819,10 @@ public class BlueMouseService extends Service {
 	@Override
 	public void onDestroy() {
 		Log.d(TAG, TAG + " destroyed");
+
+		mLocationManager.removeUpdates(mLocationUpdateListener);
+		mLocationManager.removeNmeaListener(mNMEAListener);
+
 		// if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread
 		// = null;}
 		if (mConnectedThread != null) {
@@ -585,6 +863,15 @@ public class BlueMouseService extends Service {
 
 			mAcceptThread = new AcceptThread();
 			mAcceptThread.start();
+
+			Log.d(TAG, "request location updates");
+			mLocationManager.requestLocationUpdates(
+					LocationManager.NETWORK_PROVIDER, 2000, 0,
+					mLocationUpdateListener);
+			mLocationManager.requestLocationUpdates(
+					LocationManager.GPS_PROVIDER, 2000, 0,
+					mLocationUpdateListener);
+			mLocationManager.addNmeaListener(mNMEAListener);
 		}
 
 		return START_STICKY;
