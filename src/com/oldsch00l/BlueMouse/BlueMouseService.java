@@ -606,6 +606,9 @@ public class BlueMouseService extends Service {
 		PendingIntent contentIntent = PendingIntent.getActivity(this, 0,
 				new Intent(this, BlueMouse.class), 0);
 
+		// Keep the notification there until the service is destroyed
+		notification.flags |= Notification.FLAG_NO_CLEAR;
+
 		// Set the info for the views that show in the notification panel.
 		notification.setLatestEventInfo(this, getText(R.string.app_name), text,
 				contentIntent);
