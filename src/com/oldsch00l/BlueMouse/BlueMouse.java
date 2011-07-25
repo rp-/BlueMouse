@@ -80,10 +80,13 @@ public class BlueMouse extends MapActivity {
 	public static final int MESSAGE_WRITE = 3;
 	public static final int MESSAGE_DEVICE_NAME = 4;
 	public static final int MESSAGE_TOAST = 5;
+	public static final int MESSAGE_UPDATE_LOC = 6;
 
 	// Key names received from the BlueMouseService Handler
 	public static final String DEVICE_NAME = "device_name";
 	public static final String TOAST = "Toast";
+
+	public static final String EXTRA_CURRENT_LOC = "CURRENT_LOC";
 
 	// Intent request codes
 	// private static final int REQUEST_CONNECT_DEVICE = 1;
@@ -96,6 +99,7 @@ public class BlueMouse extends MapActivity {
 
 	// Layout Views
 	private TextView mTitle;
+	private TextView mTVLocation;
 	private Button mRelaseCameraButton;
 
 	// Map stuff
@@ -135,6 +139,9 @@ public class BlueMouse extends MapActivity {
 		mTitle = (TextView) findViewById(R.id.title_left_text);
 		mTitle.setText(R.string.app_name);
 		mTitle = (TextView) findViewById(R.id.title_right_text);
+
+		// Current location Textview
+		mTVLocation = (TextView) findViewById(R.id.tvCurrentLoc);
 
 		// map activity
 		mMapView = (MapView) findViewById(R.id.mapview);
@@ -341,6 +348,11 @@ public class BlueMouse extends MapActivity {
 				Toast.makeText(getApplicationContext(),
 						msg.getData().getString(TOAST), Toast.LENGTH_SHORT)
 						.show();
+			}
+				break;
+			case MESSAGE_UPDATE_LOC: {
+				String sLoc = msg.getData().getString(EXTRA_CURRENT_LOC);
+				mTVLocation.setText(sLoc);
 			}
 				break;
 			}

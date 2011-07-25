@@ -706,7 +706,7 @@ public class BlueMouseService extends Service {
 
 		@Override
 		public void run() {
-			byte[] msg = null;
+			String sGGAMsg = null;
 			// if GPS provider isn't enabled and
 			// we don't have an update from the NMEA listener
 			// create our own GGA sentence from the current location
@@ -715,13 +715,12 @@ public class BlueMouseService extends Service {
 					.isProviderEnabled(LocationManager.GPS_PROVIDER)
 					|| mCurGGAString == null) {
 				if (mCurLocation != null) {
-					String sGGA = getNMEAGGA(mCurLocation);
-					msg = sGGA.getBytes();
+					sGGAMsg = getNMEAGGA(mCurLocation);
 				}
 			} else {
-				msg = mCurGGAString.getBytes();
+				sGGAMsg = mCurGGAString;
 			}
-			write(msg);
+			write(sGGAMsg.getBytes());
 		}
 	}
 
@@ -729,7 +728,7 @@ public class BlueMouseService extends Service {
 
 		@Override
 		public void run() {
-			byte[] msg = null;
+			String sRMCMsg = null;
 			// if GPS provider isn't enabled and
 			// we don't have an update from the NMEA listener
 			// create our own RMC sentence from the current location
@@ -738,13 +737,24 @@ public class BlueMouseService extends Service {
 					.isProviderEnabled(LocationManager.GPS_PROVIDER)
 					|| mCurRMCString == null) {
 				if (mCurLocation != null) {
-					String sRMC = getNMEARMC(mCurLocation);
-					msg = sRMC.getBytes();
+					sRMCMsg = getNMEARMC(mCurLocation);
 				}
 			} else {
-				msg = mCurRMCString.getBytes();
+				sRMCMsg = mCurRMCString;
 			}
-			write(msg);
+			Message message = mHandler.obtainMessage(BlueMouse.MESSAGE_UPDATE_LOC);
+			Bundle bundle = new Bundle();
+			bundle.putString(BlueMouse.EXTRA_CURRENT_LOC,
+					String.format(
+						"LAT: %.4f\nLONG: %.4f",
+						mCurLocation.getLatitude(),
+						mCurLocation.getLongitude()
+					)
+				);
+			message.setData(bundle);
+			mHandler.sendMessage(message);
+			Log.d(TAG, sRMCMsg);
+			write(sRMCMsg.getBytes());
 		}
 
 	}
@@ -801,10 +811,15 @@ public class BlueMouseService extends Service {
 
 			@Override
 			public void onNmeaReceived(long timestamp, String nmea) {
-				if (nmea.startsWith("$GPRMC")) {
+				if (nmea.startsWith("$GPRMC") && !nmea.startsWith("$GPRMC,,")) {
 					mCurRMCString = nmea;
-				} else if (nmea.startsWith("$GPGGA")) {
+				} else {
+					mCurRMCString = null;
+				}
+				if (nmea.startsWith("$GPGGA") && !nmea.startsWith("$GPGGA,,")) {
 					mCurGGAString = nmea;
+				} else {
+					mCurGGAString = null;
 				}
 			}
 
