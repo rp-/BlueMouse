@@ -36,7 +36,6 @@
 
 package com.oldsch00l.BlueMouse;
 
-import java.text.SimpleDateFormat;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -239,13 +238,6 @@ public class BlueMouse extends MapActivity {
 		startBlueMouseService();
 	}
 
-	private void startBlueMouseService() {
-		Log.d(TAG, "setupBlueMouse()");
-		// Initialize the startBlueMouseService to perform bluetooth
-		// connections
-		startService(new Intent(this, BlueMouseService.class));
-	}
-
 	@Override
 	public void onPause() {
 		stopLocationUpdates();
@@ -266,6 +258,13 @@ public class BlueMouse extends MapActivity {
 		super.onDestroy();
 	}
 
+	private void startBlueMouseService() {
+		Log.d(TAG, "startBlueMouseService()");
+		// Initialize the startBlueMouseService to perform bluetooth
+		// connections
+		startService(new Intent(this, BlueMouseService.class));
+	}
+
 	private void ensureDiscoverable() {
 		Log.d(TAG, "ensure discoverable");
 		if (mBluetoothAdapter.getScanMode() != BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
@@ -279,13 +278,13 @@ public class BlueMouse extends MapActivity {
 
 	/**
 	 * Will send the correct codes to release the camera.
-	 *
+	 * 
 	 * Right now this is very basic and just a proof of concept.
-	 *
+	 * 
 	 * focus camera (half press): $PFOOR,0,1*45<CR><LF>
-	 *
+	 * 
 	 * press shutter (full press): $PFOOR,1,1*44<CR><LF>
-	 *
+	 * 
 	 * release shutter: $PFOOR,0,0*44<CR><LF>
 	 */
 	private void releaseCamera() {
@@ -302,7 +301,8 @@ public class BlueMouse extends MapActivity {
 		mTimer.schedule(new SendStringTask(RELEASE_SHUTTER), 1500);
 	}
 
-	public static SimpleDateFormat LogDate = new SimpleDateFormat("HH:mm:ss");
+	// public static SimpleDateFormat LogDate = new
+	// SimpleDateFormat("HH:mm:ss");
 
 	// The Handler that gets information back from the BluetoothSerialService
 	private final Handler mHandler = new Handler() {
