@@ -251,6 +251,8 @@ public class BlueMouseService extends Service {
 		mNMEARMCTask.cancel();
 		mNMEAGGATask = new NMEAGGATask();
 		mNMEARMCTask = new NMEARMCTask();
+		if(mTimer != null)
+			mTimer.cancel();
 		mTimer = new Timer();
 		mTimer.schedule(mNMEAGGATask, 0, 1000);
 		mTimer.schedule(mNMEARMCTask, 0, 2500);
@@ -541,6 +543,8 @@ public class BlueMouseService extends Service {
 
 		public void cancel() {
 			try {
+				mmInStream.close();
+				mmOutStream.close();
 				mmSocket.close();
 			} catch (IOException e) {
 				Log.e(TAG, "close() of connect socket failed", e);
