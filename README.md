@@ -30,6 +30,7 @@ Currently known to work devices/software versions are:
   * HTC G1/Dream with Cyanogenmod 6
   * Google Nexus S with stock ROM
   * HTC Vision/Desire Z with Cyanogenmod 7
+  * LG Optimus P990/2x with Cyanogenmod 7
 
 Known not to work:
 
