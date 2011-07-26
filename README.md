@@ -40,6 +40,8 @@ Known not to work:
 Instuctions for foolography unleashed
 -------------------------------------
 
+Before you start make sure your device is discoverable, either by the
+system setting, or make it discoverable with BlueMouse's menu option.
 Start the BlueMouse app and try to pair you unleashed with the phone
 with the paring code 0000. The first pairing will usually fail,
 because the unleashed doesn't wait long enough for you to enter the code.
