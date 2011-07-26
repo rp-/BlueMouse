@@ -259,17 +259,19 @@ public class BlueMouseService extends Service {
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 
-		setState(STATE_CONNECTED);
+		if(getState() != STATE_CONNECTED) {
+			setState(STATE_CONNECTED);
 
-		mNMEAGGATask.cancel();
-		mNMEARMCTask.cancel();
-		mNMEAGGATask = new NMEAGGATask();
-		mNMEARMCTask = new NMEARMCTask();
-		if(mTimer != null)
-			mTimer.cancel();
-		mTimer = new Timer();
-		mTimer.schedule(mNMEAGGATask, 0, 1000);
-		mTimer.schedule(mNMEARMCTask, 0, 2500);
+			mNMEAGGATask.cancel();
+			mNMEARMCTask.cancel();
+			mNMEAGGATask = new NMEAGGATask();
+			mNMEARMCTask = new NMEARMCTask();
+			if(mTimer != null)
+				mTimer.cancel();
+			mTimer = new Timer();
+			mTimer.schedule(mNMEAGGATask, 0, 1000);
+			mTimer.schedule(mNMEARMCTask, 0, 2500);
+		}
 	}
 
 	/**
@@ -307,18 +309,23 @@ public class BlueMouseService extends Service {
 	 * Indicate that the connection was lost and notify the UI Activity.
 	 */
 	private void connectionLost(ConnectedThread conn) {
-		if(mConnectedList.size() == 0) {
-			if (mTimer != null) {
-				mTimer.cancel();
-			}
-			setState(STATE_LISTEN);
-		}
-
 		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICE_DISCONNECTED);
 		Bundle bundle = new Bundle();
 		bundle.putString(BlueMouse.EXTRA_DEVICE_NAME, conn.getSocket().getRemoteDevice().getName());
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
+
+		mConnectedList.remove(conn);
+		conn.cancel();
+
+		if(mConnectedList.size() == 0) {
+			if (mTimer != null) {
+				mTimer.cancel();
+			}
+			mNMEAGGATask.cancel();
+			mNMEARMCTask.cancel();
+			setState(STATE_LISTEN);
+		}
 
 		// restart accept thread
 		// synchronized (this) {
@@ -526,9 +533,9 @@ public class BlueMouseService extends Service {
 						mmSocket.close();
 					} catch (IOException e1) {
 						Log.e(TAG, "socket close failed", e1);
+					} finally{
+						connectionLost(this);
 					}
-
-					connectionLost(this);
 					break;
 				}
 			}
