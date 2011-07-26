@@ -17,7 +17,7 @@
 /*
  *  This File was edited and further relicensed under GPL v3.
  *  Copyright (C) 2011 Rene Peinthor.
- * 
+ *
  *  This file is part of BlueMouse.
  *
  *  BlueMouse is free software: you can redistribute it and/or modify
@@ -41,6 +41,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -88,8 +90,8 @@ public class BlueMouseService extends Service {
 	private final BluetoothAdapter mAdapter;
 	private Handler mHandler = new Handler();
 	private AcceptThread mAcceptThread;
-	private ConnectedThread mConnectedThread;
-	private String mCurrentDeviceName = null;
+	private List<ConnectedThread> mConnectedList;
+	//private ConnectedThread mConnectedThread;
 	private int mState;
 
 	// private ConnectThread mConnectThread;
@@ -126,7 +128,7 @@ public class BlueMouseService extends Service {
 
 	/**
 	 * Constructor. Prepares a new BluetoothChat session.
-	 * 
+	 *
 	 * @param context
 	 *            The UI Activity Context
 	 * @param handler
@@ -135,14 +137,15 @@ public class BlueMouseService extends Service {
 	public BlueMouseService() {
 		mAdapter = BluetoothAdapter.getDefaultAdapter();
 		mState = STATE_NONE;
+		mConnectedList = new ArrayList<BlueMouseService.ConnectedThread>();
 	}
 
 	/**
 	 * Set the Handler from the BlueMouse activity so we see whats going on from
 	 * the service.
-	 * 
+	 *
 	 * Only 1 Handler can be set.
-	 * 
+	 *
 	 * @param handler
 	 *            handler to send messages to
 	 */
@@ -154,7 +157,7 @@ public class BlueMouseService extends Service {
 
 	/**
 	 * Set the current state of the bluetooth connection
-	 * 
+	 *
 	 * @param state
 	 *            An integer defining the current connection state
 	 */
@@ -179,32 +182,40 @@ public class BlueMouseService extends Service {
 	 */
 	public synchronized void updateUI() {
 		// Send the name of the connected device back to the UI Activity
-		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICE_NAME);
-		Bundle bundle = new Bundle();
-		bundle.putString(BlueMouse.DEVICE_NAME, mCurrentDeviceName);
-		msg.setData(bundle);
-		mHandler.sendMessage(msg);
+		getConnnectedDevices();
 
 		setState(getState());
 	}
 
+	public void getConnnectedDevices() {
+		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICES);
+		Bundle bundle = new Bundle();
+		ArrayList<String> deviceNames = new ArrayList<String>();
+		for(ConnectedThread conn : mConnectedList) {
+			deviceNames.add(conn.getSocket().getRemoteDevice().getName());
+		}
+		bundle.putStringArrayList(BlueMouse.EXTRA_CONNECTED_DEVICES, deviceNames);
+		msg.setData(bundle);
+		mHandler.sendMessage(msg);
+	}
+
 	/**
 	 * Start the ConnectThread to initiate a connection to a remote device.
-	 * 
+	 *
 	 * @param device
 	 *            The BluetoothDevice to connect
 	 */
 	/*
 	 * public synchronized void connect(BluetoothDevice device) { if (D)
 	 * Log.d(TAG, "connect to: " + device);
-	 * 
+	 *
 	 * // Cancel any thread attempting to make a connection if (mState ==
 	 * STATE_CONNECTING) { if (mConnectThread != null) {mConnectThread.cancel();
 	 * mConnectThread = null;} }
-	 * 
+	 *
 	 * // Cancel any thread currently running a connection if (mConnectedThread
 	 * != null) {mConnectedThread.cancel(); mConnectedThread = null;}
-	 * 
+	 *
 	 * // Start the thread to connect with the given device mConnectThread = new
 	 * ConnectThread(device); mConnectThread.start();
 	 * setState(STATE_CONNECTING); }
@@ -212,7 +223,7 @@ public class BlueMouseService extends Service {
 
 	/**
 	 * Start the ConnectedThread to begin managing a Bluetooth connection
-	 * 
+	 *
 	 * @param socket
 	 *            The BluetoothSocket on which the connection was made
 	 * @param device
@@ -227,21 +238,24 @@ public class BlueMouseService extends Service {
 		// = null;}
 
 		// Cancel any thread currently running a connection
-		if (mConnectedThread != null) {
+/*		if (mConnectedThread != null) {
 			mConnectedThread.cancel();
 			mConnectedThread = null;
-		}
+		}*/
 
 		// Start the thread to manage the connection and perform transmissions
+		ConnectedThread connection = new ConnectedThread(socket);
+		connection.start();
+		mConnectedList.add(connection);
+		/*
 		mConnectedThread = new ConnectedThread(socket);
 		mConnectedThread.start();
-
-		mCurrentDeviceName = device.getName();
+		*/
 
 		// Send the name of the connected device back to the UI Activity
-		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICE_NAME);
+		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICE_CONNECTED);
 		Bundle bundle = new Bundle();
-		bundle.putString(BlueMouse.DEVICE_NAME, mCurrentDeviceName);
+		bundle.putString(BlueMouse.EXTRA_DEVICE_NAME, device.getName());
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 
@@ -260,23 +274,20 @@ public class BlueMouseService extends Service {
 
 	/**
 	 * Write to the ConnectedThread in an unsynchronized manner
-	 * 
+	 *
 	 * @param out
 	 *            The bytes to write
 	 * @see ConnectedThread#write(byte[])
 	 */
 	public void write(byte[] out) {
 		if (out != null) {
-			// Create temporary object
-			ConnectedThread r;
 			// Synchronize a copy of the ConnectedThread
-			synchronized (this) {
-				if (mState != STATE_CONNECTED)
-					return;
-				r = mConnectedThread;
+			if(getState() != STATE_CONNECTED)
+				return;
+
+			for(ConnectedThread conn : mConnectedList) {
+				conn.write(out);
 			}
-			// Perform the write unsynchronized
-			r.write(out);
 		}
 	}
 
@@ -285,7 +296,7 @@ public class BlueMouseService extends Service {
 	 */
 	/*
 	 * private void connectionFailed() { setState(STATE_LISTEN);
-	 * 
+	 *
 	 * // Send a failure message back to the Activity Message msg =
 	 * mHandler.obtainMessage(BlueMouse.MESSAGE_TOAST); Bundle bundle = new
 	 * Bundle(); bundle.putString("Toast", "Unable to connect device");
@@ -295,26 +306,19 @@ public class BlueMouseService extends Service {
 	/**
 	 * Indicate that the connection was lost and notify the UI Activity.
 	 */
-	private void connectionLost() {
-		setState(STATE_LISTEN);
-
-		if (mTimer != null) {
-			mTimer.cancel();
+	private void connectionLost(ConnectedThread conn) {
+		if(mConnectedList.size() == 0) {
+			if (mTimer != null) {
+				mTimer.cancel();
+			}
+			setState(STATE_LISTEN);
 		}
 
-		// Send a failure message back to the Activity
-		if (mCurrentDeviceName != null) {
-			Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_TOAST);
-			Bundle bundle = new Bundle();
-			bundle.putString("Toast", String.format(
-					"%s:\nConnection to %s lost", TAG, mCurrentDeviceName));
-			msg.setData(bundle);
-			mHandler.sendMessage(msg);
-		}
-
-		mCurrentDeviceName = null;
-		mHandler.obtainMessage(BlueMouse.MESSAGE_STATE_CHANGE,
-				STATE_DISCONNECTED, -1).sendToTarget();
+		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICE_DISCONNECTED);
+		Bundle bundle = new Bundle();
+		bundle.putString(BlueMouse.EXTRA_DEVICE_NAME, conn.getSocket().getRemoteDevice().getName());
+		msg.setData(bundle);
+		mHandler.sendMessage(msg);
 
 		// restart accept thread
 		// synchronized (this) {
@@ -398,11 +402,12 @@ public class BlueMouseService extends Service {
 						switch (mState) {
 						case STATE_LISTEN:
 						case STATE_CONNECTING:
+						case STATE_CONNECTED:
 							// Situation normal. Start the connected thread.
 							connected(socket, socket.getRemoteDevice());
 							break;
 						case STATE_NONE:
-						case STATE_CONNECTED:
+						//case STATE_CONNECTED:
 							// Either not ready or already connected. Terminate
 							// new socket.
 							try {
@@ -433,27 +438,27 @@ public class BlueMouseService extends Service {
 	 * This thread runs while attempting to make an outgoing connection with a
 	 * device. It runs straight through; the connection either succeeds or
 	 * fails.
-	 * 
+	 *
 	 * Currently not used
 	 */
 	/*
 	 * private class ConnectThread extends Thread { private final
 	 * BluetoothSocket mmSocket; private final BluetoothDevice mmDevice;
-	 * 
+	 *
 	 * public ConnectThread(BluetoothDevice device) { mmDevice = device;
 	 * BluetoothSocket tmp = null;
-	 * 
+	 *
 	 * // Get a BluetoothSocket for a connection with the // given
 	 * BluetoothDevice try { tmp =
 	 * device.createRfcommSocketToServiceRecord(MY_UUID); } catch (IOException
 	 * e) { Log.e(TAG, "create() failed", e); } mmSocket = tmp; }
-	 * 
+	 *
 	 * public void run() { Log.i(TAG, "BEGIN mConnectThread");
 	 * setName("ConnectThread");
-	 * 
+	 *
 	 * // Always cancel discovery because it will slow down a connection
 	 * mAdapter.cancelDiscovery();
-	 * 
+	 *
 	 * // Make a connection to the BluetoothSocket try { // This is a blocking
 	 * call and will only return on a // successful connection or an exception
 	 * mmSocket.connect(); } catch (IOException e) { connectionFailed(); //
@@ -461,12 +466,12 @@ public class BlueMouseService extends Service {
 	 * Log.e(TAG, "unable to close() socket during connection failure", e2); }
 	 * // Start the service over to restart listening mode
 	 * BluetoothSerialService.this.start(); return; }
-	 * 
+	 *
 	 * // Reset the ConnectThread because we're done synchronized
 	 * (BluetoothSerialService.this) { mConnectThread = null; }
-	 * 
+	 *
 	 * // Start the connected thread connected(mmSocket, mmDevice); }
-	 * 
+	 *
 	 * public void cancel() { try { mmSocket.close(); } catch (IOException e) {
 	 * Log.e(TAG, "close() of connect socket failed", e); } } }
 	 */
@@ -499,7 +504,7 @@ public class BlueMouseService extends Service {
 		}
 
 		public void run() {
-			Log.i(TAG, "BEGIN mConnectedThread");
+			Log.d(TAG, "BEGIN mConnectedThread");
 			byte[] buffer = new byte[1024];
 			// int bytes;
 
@@ -515,7 +520,15 @@ public class BlueMouseService extends Service {
 					// .sendToTarget();
 				} catch (IOException e) {
 					Log.e(TAG, "disconnected", e);
-					connectionLost();
+					try {
+						mmInStream.close();
+						mmOutStream.close();
+						mmSocket.close();
+					} catch (IOException e1) {
+						Log.e(TAG, "socket close failed", e1);
+					}
+
+					connectionLost(this);
 					break;
 				}
 			}
@@ -523,7 +536,7 @@ public class BlueMouseService extends Service {
 
 		/**
 		 * Write to the connected OutStream.
-		 * 
+		 *
 		 * @param buffer
 		 *            The bytes to write
 		 */
@@ -546,9 +559,14 @@ public class BlueMouseService extends Service {
 				mmInStream.close();
 				mmOutStream.close();
 				mmSocket.close();
+				mConnectedList.remove(this);
 			} catch (IOException e) {
 				Log.e(TAG, "close() of connect socket failed", e);
 			}
+		}
+
+		public BluetoothSocket getSocket() {
+			return mmSocket;
 		}
 	}
 
@@ -690,10 +708,16 @@ public class BlueMouseService extends Service {
 
 		// if (mConnectThread != null) {mConnectThread.cancel(); mConnectThread
 		// = null;}
+		for(ConnectedThread conn : mConnectedList) {
+			conn.cancel();
+			mConnectedList.remove(conn);
+		}
+		/*
 		if (mConnectedThread != null) {
 			mConnectedThread.cancel();
 			mConnectedThread = null;
 		}
+		*/
 		if (mAcceptThread != null) {
 			mAcceptThread.cancel();
 			mAcceptThread = null;
@@ -721,10 +745,12 @@ public class BlueMouseService extends Service {
 			// mConnectThread = null;}
 
 			// Cancel any thread currently running a connection
+			/*
 			if (mConnectedThread != null) {
 				mConnectedThread.cancel();
 				mConnectedThread = null;
 			}
+			*/
 
 			mAcceptThread = new AcceptThread();
 			mAcceptThread.start();

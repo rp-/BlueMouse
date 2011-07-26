@@ -36,6 +36,8 @@
 
 package com.oldsch00l.BlueMouse;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -77,15 +79,18 @@ public class BlueMouse extends MapActivity {
 	public static final int MESSAGE_STATE_CHANGE = 1;
 	public static final int MESSAGE_READ = 2;
 	public static final int MESSAGE_WRITE = 3;
-	public static final int MESSAGE_DEVICE_NAME = 4;
+	public static final int MESSAGE_DEVICE_CONNECTED = 4;
 	public static final int MESSAGE_TOAST = 5;
 	public static final int MESSAGE_UPDATE_LOC = 6;
+	public static final int MESSAGE_DEVICES = 7;
+	public static final int MESSAGE_DEVICE_DISCONNECTED = 8;
 
 	// Key names received from the BlueMouseService Handler
-	public static final String DEVICE_NAME = "device_name";
 	public static final String TOAST = "Toast";
 
+	public static final String EXTRA_DEVICE_NAME = "device_name";
 	public static final String EXTRA_CURRENT_LOC = "CURRENT_LOC";
+	public static final String EXTRA_CONNECTED_DEVICES = "CONNECTED_DEVICES";
 
 	// Intent request codes
 	// private static final int REQUEST_CONNECT_DEVICE = 1;
@@ -106,12 +111,13 @@ public class BlueMouse extends MapActivity {
 	private MapView mMapView;
 	private MyLocationOverlay mLocationOverlay;
 
-	// Name of the connected device
-	private String mConnectedDeviceName = null;
 	// Local Bluetooth adapter
 	private BluetoothAdapter mBluetoothAdapter = null;
 	// Member object for the chat services
 	private BlueMouseService mSerialService = null;
+
+	// List of connected device names
+	private List<String> mConnectedDevices = new ArrayList<String>();
 
 	// Timer stuff
 	private Timer mTimer = new Timer();
@@ -278,13 +284,13 @@ public class BlueMouse extends MapActivity {
 
 	/**
 	 * Will send the correct codes to release the camera.
-	 * 
+	 *
 	 * Right now this is very basic and just a proof of concept.
-	 * 
+	 *
 	 * focus camera (half press): $PFOOR,0,1*45<CR><LF>
-	 * 
+	 *
 	 * press shutter (full press): $PFOOR,1,1*44<CR><LF>
-	 * 
+	 *
 	 * release shutter: $PFOOR,0,0*44<CR><LF>
 	 */
 	private void releaseCamera() {
@@ -304,45 +310,58 @@ public class BlueMouse extends MapActivity {
 	// public static SimpleDateFormat LogDate = new
 	// SimpleDateFormat("HH:mm:ss");
 
+	private static String stripUnleashedAddress(String sDeviceName) {
+		String sStripped = sDeviceName;
+		if (sDeviceName != null) {
+			if (sDeviceName.startsWith("Unleashed"))
+			{
+				 sStripped = sDeviceName.substring(
+						0, sDeviceName.lastIndexOf(' '));
+			}
+		}
+		return sStripped;
+	}
+
+	private void updateTitle() {
+		String sTitle = getString(R.string.title_not_connected);
+		if(mConnectedDevices.size() > 0) {
+			sTitle = getString(R.string.title_connected_to) + " ";
+			sTitle += stripUnleashedAddress(mConnectedDevices.get(0));
+			for(int i = 1; i < mConnectedDevices.size(); i++) {
+				sTitle += ", " + stripUnleashedAddress(mConnectedDevices.get(i));
+			}
+		}
+		mTitle.setText(sTitle);
+	}
+
 	// The Handler that gets information back from the BluetoothSerialService
 	private final Handler mHandler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
-			case MESSAGE_STATE_CHANGE:
-				Log.d(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
+			case MESSAGE_STATE_CHANGE: {
+					Log.d(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
 
-				switch (msg.arg1) {
-				case BlueMouseService.STATE_CONNECTED: {
-					mTitle.setText(getString(R.string.title_connected_to,
-							mConnectedDeviceName));
+					switch (msg.arg1) {
+						case BlueMouseService.STATE_CONNECTED: {
+						}
+						break;
+						case BlueMouseService.STATE_CONNECTING: {
+							mTitle.setText(R.string.title_connecting);
+						}
+						break;
+						case BlueMouseService.STATE_LISTEN:
+						case BlueMouseService.STATE_NONE: {
+							mTitle.setText(R.string.title_not_connected);
+						}
+						break;
+					}
 				}
-					break;
-				case BlueMouseService.STATE_CONNECTING: {
-					mTitle.setText(R.string.title_connecting);
+				break;
+			case MESSAGE_DEVICES: {
+					mConnectedDevices = msg.getData().getStringArrayList(EXTRA_CONNECTED_DEVICES);
+					updateTitle();
 				}
-					break;
-				case BlueMouseService.STATE_LISTEN:
-				case BlueMouseService.STATE_NONE: {
-					mTitle.setText(R.string.title_not_connected);
-				}
-					break;
-				case BlueMouseService.STATE_DISCONNECTED: {
-				}
-					break;
-				}
-			case MESSAGE_DEVICE_NAME: {
-				// save the connected device's name
-				mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
-				if (mConnectedDeviceName != null) {
-					if (mConnectedDeviceName.startsWith("Unleashed"))
-						mConnectedDeviceName = mConnectedDeviceName.substring(
-								0, mConnectedDeviceName.lastIndexOf(' '));
-					Toast.makeText(getApplicationContext(),
-							"Connected to " + mConnectedDeviceName,
-							Toast.LENGTH_SHORT).show();
-				}
-			}
 				break;
 			case MESSAGE_TOAST: {
 				Toast.makeText(getApplicationContext(),
@@ -354,6 +373,23 @@ public class BlueMouse extends MapActivity {
 				String sLoc = msg.getData().getString(EXTRA_CURRENT_LOC);
 				mTVLocation.setText(sLoc);
 			}
+				break;
+			case MESSAGE_DEVICE_CONNECTED: {
+					String sDevice = msg.getData().getString(EXTRA_DEVICE_NAME);
+					mConnectedDevices.add(sDevice);
+					updateTitle();
+					Toast.makeText(getBaseContext(), String.format("Connected to %s.",
+							sDevice), Toast.LENGTH_SHORT).show();
+				}
+				break;
+
+			case MESSAGE_DEVICE_DISCONNECTED: {
+					String sDevice = msg.getData().getString(EXTRA_DEVICE_NAME);
+					mConnectedDevices.remove(sDevice);
+					updateTitle();
+					Toast.makeText(getBaseContext(), String.format("Connection to %s lost.",
+							sDevice), Toast.LENGTH_SHORT).show();
+				}
 				break;
 			}
 		}
