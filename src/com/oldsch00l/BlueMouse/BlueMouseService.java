@@ -100,8 +100,7 @@ public class BlueMouseService extends Service {
 
 	// private ConnectThread mConnectThread;
 
-	private TimerTask mNMEARMCTask = new NMEARMCTask();
-	private TimerTask mNMEAGGATask = new NMEAGGATask();
+	private TimerTask mNMEATask = new NMEATask();
 
 	// Timer stuff
 	private Timer mTimer;
@@ -286,15 +285,12 @@ public class BlueMouseService extends Service {
 		if(getState() != STATE_CONNECTED) {
 			setState(STATE_CONNECTED);
 
-			mNMEAGGATask.cancel();
-			mNMEARMCTask.cancel();
-			mNMEAGGATask = new NMEAGGATask();
-			mNMEARMCTask = new NMEARMCTask();
+			mNMEATask.cancel();
+			mNMEATask = new NMEATask();
 			if(mTimer != null)
 				mTimer.cancel();
 			mTimer = new Timer();
-			mTimer.schedule(mNMEAGGATask, 0, 1000);
-			mTimer.schedule(mNMEARMCTask, 0, 2500);
+			mTimer.schedule(mNMEATask, 0, 1000);
 		}
 	}
 
@@ -346,8 +342,7 @@ public class BlueMouseService extends Service {
 			if (mTimer != null) {
 				mTimer.cancel();
 			}
-			mNMEAGGATask.cancel();
-			mNMEARMCTask.cancel();
+			mNMEATask.cancel();
 			setState(STATE_LISTEN);
 		}
 
@@ -601,29 +596,7 @@ public class BlueMouseService extends Service {
 		}
 	}
 
-	private class NMEAGGATask extends TimerTask {
-
-		@Override
-		public void run() {
-			String sGGAMsg = null;
-			// if GPS provider isn't enabled and
-			// we don't have an update from the NMEA listener
-			// create our own GGA sentence from the current location
-			// if available
-			if (!mLocationManager
-					.isProviderEnabled(LocationManager.GPS_PROVIDER)
-					|| mCurGGAString == null) {
-				if (mCurLocation != null) {
-					sGGAMsg = NMEAHelper.getNMEAGGA(mCurLocation);
-				}
-			} else {
-				sGGAMsg = mCurGGAString;
-			}
-			write(sGGAMsg.getBytes());
-		}
-	}
-
-	private class NMEARMCTask extends TimerTask {
+	private class NMEATask extends TimerTask {
 
 		@Override
 		public void run() {
@@ -654,8 +627,31 @@ public class BlueMouseService extends Service {
 			mHandler.sendMessage(message);
 			Log.d(TAG, sRMCMsg);
 			write(sRMCMsg.getBytes());
-		}
 
+
+			// make sure GGA is send after RMC with a 200ms delay
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			String sGGAMsg = null;
+			// if GPS provider isn't enabled and
+			// we don't have an update from the NMEA listener
+			// create our own GGA sentence from the current location
+			// if available
+			if (!mLocationManager
+					.isProviderEnabled(LocationManager.GPS_PROVIDER)
+					|| mCurGGAString == null) {
+				if (mCurLocation != null) {
+					sGGAMsg = NMEAHelper.getNMEAGGA(mCurLocation);
+				}
+			} else {
+				sGGAMsg = mCurGGAString;
+			}
+			Log.d(TAG, sGGAMsg);
+			write(sGGAMsg.getBytes());
+		}
 	}
 
 	/**
