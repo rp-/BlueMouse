@@ -74,7 +74,7 @@ public class NMEAHelper {
 		sbGPGGA.append('1'); // quality
 		sbGPGGA.append(',');
 		Bundle bundle = loc.getExtras();
-		int satellites = bundle.getInt("satellites", 5);
+		int satellites = bundle.getInt("satellites", 7);
 		sbGPGGA.append(satellites);
 		sbGPGGA.append(',');
 		sbGPGGA.append(',');
