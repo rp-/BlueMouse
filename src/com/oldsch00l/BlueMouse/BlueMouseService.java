@@ -290,7 +290,7 @@ public class BlueMouseService extends Service {
 			if(mTimer != null)
 				mTimer.cancel();
 			mTimer = new Timer();
-			mTimer.schedule(mNMEATask, 0, 1000);
+			mTimer.schedule(mNMEATask, 0, 2000);
 		}
 	}
 
