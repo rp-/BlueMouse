@@ -711,15 +711,25 @@ public class BlueMouseService extends Service {
 
 			@Override
 			public void onNmeaReceived(long timestamp, String nmea) {
-				if (nmea.startsWith("$GPRMC") && !nmea.startsWith("$GPRMC,,")) {
-					mCurRMCString = nmea;
-				} else {
-					mCurRMCString = null;
+				String lowerNmea = nmea.toLowerCase();
+				if (nmea.startsWith("$GPRMC")) {
+					if(lowerNmea.indexOf(",v,") == -1) {
+						Log.d(TAG, "NMEAListener: " + nmea.trim());
+						mCurRMCString = nmea;
+						return;
+					} else {
+						mCurRMCString = null;
+					}
 				}
-				if (nmea.startsWith("$GPGGA") && !nmea.startsWith("$GPGGA,,")) {
-					mCurGGAString = nmea;
-				} else {
-					mCurGGAString = null;
+
+				if (nmea.startsWith("$GPGGA")) {
+					if( lowerNmea.indexOf(",e,") > 0 || lowerNmea.indexOf(",w,") > 0 ) {
+						Log.d(TAG, "NMEAListener: " + nmea.trim());
+						mCurGGAString = nmea;
+						return;
+					} else {
+						mCurGGAString = null;
+					}
 				}
 			}
 
