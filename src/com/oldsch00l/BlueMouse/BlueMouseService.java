@@ -625,7 +625,7 @@ public class BlueMouseService extends Service {
 				);
 			message.setData(bundle);
 			mHandler.sendMessage(message);
-			Log.d(TAG, sRMCMsg);
+			Log.d(TAG, sRMCMsg.trim());
 			write(sRMCMsg.getBytes());
 
 
@@ -649,7 +649,7 @@ public class BlueMouseService extends Service {
 			} else {
 				sGGAMsg = mCurGGAString;
 			}
-			Log.d(TAG, sGGAMsg);
+			Log.d(TAG, sGGAMsg.trim());
 			write(sGGAMsg.getBytes());
 		}
 	}
