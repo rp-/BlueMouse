@@ -42,6 +42,7 @@ import java.io.OutputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -54,8 +55,11 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothServerSocket;
 import android.bluetooth.BluetoothSocket;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.location.GpsStatus.NmeaListener;
 import android.location.Location;
 import android.location.LocationListener;
@@ -125,6 +129,11 @@ public class BlueMouseService extends Service {
 	public static final int STATE_DISCONNECTED = 4; // client disconnected
 
 	public static final int NOTIFICATION_ID = 1;
+
+	// Database Helper
+	public static BlueMouseSQLite DBHelper;
+	// Writeable Database
+	public static SQLiteDatabase DB;
 
 	/**
 	 * Constructor. Prepares a new BluetoothChat session.
@@ -242,6 +251,21 @@ public class BlueMouseService extends Service {
 			mConnectedThread.cancel();
 			mConnectedThread = null;
 		}*/
+
+		// Add device to DB
+		Cursor c = DB.query(BlueMouseSQLite.TABLE_DEVICES, null, "address=?", new String[] { device.getAddress() }, null, null, null);
+		if(c.moveToFirst()) {
+			ContentValues cv = new ContentValues();
+			cv.put("last_connect", BlueMouseSQLite.SDateFormat.format(new Date()));
+			DB.update(BlueMouseSQLite.TABLE_DEVICES, cv, "address=?", new String[] { device.getAddress() });
+		} else {
+			ContentValues cv = new ContentValues();
+			cv.put("address", device.getAddress());
+			cv.put("name", device.getName());
+			cv.put("last_connect", BlueMouseSQLite.SDateFormat.format(new Date()));
+			DB.insert(BlueMouseSQLite.TABLE_DEVICES, null, cv);
+		}
+		c.close();
 
 		// Start the thread to manage the connection and perform transmissions
 		ConnectedThread connection = new ConnectedThread(socket);
@@ -657,10 +681,15 @@ public class BlueMouseService extends Service {
 
 	@Override
 	public void onCreate() {
-		mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+		// Init DB
+		DBHelper = new BlueMouseSQLite(getBaseContext(), BlueMouseSQLite.NAME, null, BlueMouseSQLite.VERSION);
+		DB = DBHelper.getWritableDatabase();
 
+		// Get Managers
+		mNM = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
 		mLocationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
 
+		// Init location listeners
 		mLocationUpdateListener = new LocationListener() {
 
 			@Override
@@ -730,6 +759,9 @@ public class BlueMouseService extends Service {
 			mAcceptThread = null;
 		}
 		setState(STATE_NONE);
+
+		// Close DB
+		DB.close();
 
 		// Cancel the notification
 		mNM.cancel(NOTIFICATION_ID);
