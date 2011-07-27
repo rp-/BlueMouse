@@ -143,7 +143,7 @@ public class NMEAHelper {
 		sbGPRMC.append(',');
 		sbGPRMC.append(cEastWest);
 		sbGPRMC.append(',');
-		// sbGPRMC.append(location.getSpeed());
+		sbGPRMC.append(shortFormat.format(loc.getSpeed() * 1.94));
 		sbGPRMC.append(",");
 		sbGPRMC.append(shortFormat.format(loc.getBearing()));
 		sbGPRMC.append(",");
