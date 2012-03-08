@@ -614,18 +614,20 @@ public class BlueMouseService extends Service {
 			} else {
 				sRMCMsg = mCurRMCString;
 			}
-			Message message = mHandler.obtainMessage(BlueMouse.MESSAGE_UPDATE_LOC);
-			Bundle bundle = new Bundle();
-			bundle.putString(BlueMouse.EXTRA_CURRENT_LOC,
-					String.format(
-						"LAT: %.4f\nLONG: %.4f",
-						mCurLocation.getLatitude(),
-						mCurLocation.getLongitude()
-					)
-				);
-			message.setData(bundle);
-			mHandler.sendMessage(message);
-			Log.d(TAG, sRMCMsg.trim());
+			if(mCurLocation != null) {
+				Message message = mHandler.obtainMessage(BlueMouse.MESSAGE_UPDATE_LOC);
+				Bundle bundle = new Bundle();
+				bundle.putString(BlueMouse.EXTRA_CURRENT_LOC,
+						String.format(
+							"LAT: %.4f\nLONG: %.4f",
+							mCurLocation.getLatitude(),
+							mCurLocation.getLongitude()
+						)
+					);
+				message.setData(bundle);
+				mHandler.sendMessage(message);
+				Log.d(TAG, sRMCMsg.trim());
+			}
 			write(sRMCMsg.getBytes());
 
 
