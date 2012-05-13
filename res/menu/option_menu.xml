@@ -17,6 +17,9 @@
     <item android:id="@+id/discoverable"
           android:icon="@android:drawable/ic_menu_mylocation"
           android:title="@string/discoverable" />
+    <item android:id="@+id/menu_settings"
+          android:title="@string/settings"
+          android:icon="@android:drawable/ic_menu_preferences" />
     <item android:title="@string/exit" android:id="@+id/menu_exit"
     	android:icon="@drawable/ic_lock_power_off"/>
 </menu>

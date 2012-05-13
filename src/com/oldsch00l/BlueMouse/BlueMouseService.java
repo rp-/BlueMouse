@@ -46,6 +46,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.UUID;
 
 import android.app.Notification;
 import android.app.NotificationManager;
@@ -81,12 +82,14 @@ public class BlueMouseService extends Service {
 	// Debugging
 	private static final String TAG = "BlueMouseService";
 
+	public static final String EXTRA_CHANNEL = "com.oldsch00l.BlueMouse.channel";
+
 	// Name for the SDP record when creating server socket
-	// private static final String NAME = "SPP slave";
+	private static final String BT_SERVICE_NAME = "BlueMouse GPS";
 
 	// Unique UUID for this application
-	// private static final UUID MY_UUID =
-	// UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); //SPP uuid
+	private static final UUID MY_UUID =
+			UUID.fromString("00001101-0000-1000-8000-00805F9B34FB"); //SPP uuid
 	// private static final UUID MY_UUID =
 	// UUID.fromString("551fb220-5329-11e0-b8af-0800200c9a66"); //SPP uuid
 
@@ -362,17 +365,23 @@ public class BlueMouseService extends Service {
 	private class AcceptThread extends Thread {
 		// The local server socket
 		private final BluetoothServerSocket mmServerSocket;
+		private final int mChannel;
 
-		public AcceptThread() {
+		public AcceptThread(int channel) {
 			BluetoothServerSocket tmp = null;
+			mChannel = channel;
 
 			// Create a new listening server socket
 			try {
-				// tmp = mAdapter.listenUsingRfcommWithServiceRecord(NAME,
-				// MY_UUID);
-				Method m = mAdapter.getClass().getMethod("listenUsingRfcommOn",
+				if( channel == -1 ) {
+					tmp = mAdapter.listenUsingRfcommWithServiceRecord(BT_SERVICE_NAME, MY_UUID);
+				}
+				else {
+					Method m = mAdapter.getClass().getMethod("listenUsingRfcommOn",
 						new Class[] { int.class });
-				tmp = (BluetoothServerSocket) m.invoke(mAdapter, 1);
+					tmp = (BluetoothServerSocket) m.invoke(mAdapter, channel);
+					Log.i(TAG, "Creating rfcomm port on channel: " + channel);
+				}
 			}
 			// catch (IOException e) {
 			// Log.e(TAG, "create() failed", e);
@@ -403,7 +412,7 @@ public class BlueMouseService extends Service {
 				}
 			}
 			if (mmServerSocket == null) {
-				Log.e(TAG, "Unable to create rfcom on channel 1");
+				Log.e(TAG, "Unable to create rfcom on channel " + mChannel );
 				return;
 			}
 			setState(STATE_LISTEN);
@@ -457,6 +466,10 @@ public class BlueMouseService extends Service {
 			} catch (IOException e) {
 				Log.e(TAG, "close() of server failed", e);
 			}
+		}
+
+		public int getChannel() {
+			return mChannel;
 		}
 	}
 
@@ -783,6 +796,15 @@ public class BlueMouseService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d(TAG, "start " + TAG);
 
+		int channel = -1;
+		if( intent != null )
+			channel = intent.getIntExtra(BlueMouseService.EXTRA_CHANNEL, -1);
+
+		if (mAcceptThread != null && mAcceptThread.getChannel() != channel) {
+			mAcceptThread.cancel();
+			mAcceptThread = null;
+		}
+
 		// Start the thread to listen on a BluetoothServerSocket
 		if (mAcceptThread == null) {
 			Log.d(TAG, "create new accept Thread");
@@ -799,7 +821,7 @@ public class BlueMouseService extends Service {
 			}
 			*/
 
-			mAcceptThread = new AcceptThread();
+			mAcceptThread = new AcceptThread(channel);
 			mAcceptThread.start();
 
 			Log.d(TAG, "request location updates");

@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <CheckBoxPreference android:summaryOff="automatic port will be created" android:key="forcechannel" android:summaryOn="force specified port number" android:summary="Chooce if port should be forced" android:title="Force serial port number" android:defaultValue="true"/>
+    
+    <ListPreference android:key="portnumber" android:dialogTitle="serial port number" android:title="Serial port number" android:entryValues="@array/serialports" android:entries="@array/serialports" android:dependency="forcechannel" android:defaultValue="1"/>    
+
+</PreferenceScreen>

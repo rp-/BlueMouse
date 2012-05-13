@@ -47,10 +47,12 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -268,7 +270,15 @@ public class BlueMouse extends MapActivity {
 		Log.d(TAG, "startBlueMouseService()");
 		// Initialize the startBlueMouseService to perform bluetooth
 		// connections
-		startService(new Intent(this, BlueMouseService.class));
+		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+		int channel = -1;
+		if( sp.getBoolean("forcechannel", false) )
+		{
+			channel = Integer.parseInt(sp.getString("portnumber", "1"));
+		}
+		Intent i = new Intent(this, BlueMouseService.class);
+		i.putExtra(BlueMouseService.EXTRA_CHANNEL, channel);
+		startService(i);
 	}
 
 	private void ensureDiscoverable() {
@@ -435,6 +445,12 @@ public class BlueMouse extends MapActivity {
 		case R.id.discoverable: {
 			// Ensure this device is discoverable by others
 			ensureDiscoverable();
+			return true;
+		}
+		case R.id.menu_settings: {
+			Intent settingsActivity = new Intent(getBaseContext(),
+                    Preferences.class);
+			startActivity(settingsActivity);
 			return true;
 		}
 		case R.id.menu_exit: {
