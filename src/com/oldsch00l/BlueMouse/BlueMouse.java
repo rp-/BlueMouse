@@ -221,7 +221,7 @@ public class BlueMouse extends MapActivity {
 	@Override
 	public void onStart() {
 		super.onStart();
-		Log.e(TAG, "++ ON START ++");
+		Log.d(TAG, "++ ON START ++");
 
 		// If BT is not on, request that it be enabled.
 		// setupChat() will then be called during onActivityResult
