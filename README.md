@@ -48,6 +48,8 @@ because the unleashed doesn't wait long enough for you to enter the code.
 But the second time you shouldn't get asked for a paring code anymore
 and the unleashed device should immediately connect.
 
+For foolography devices the serial channel has to be forced to channel 1.
+
 License
 -------
 
