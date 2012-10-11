@@ -641,7 +641,8 @@ public class BlueMouseService extends Service {
 				mHandler.sendMessage(message);
 				Log.d(TAG, sRMCMsg.trim());
 			}
-			write(sRMCMsg.getBytes());
+			if( sRMCMsg != null )
+				write(sRMCMsg.getBytes());
 
 
 			// make sure GGA is send after RMC with a 200ms delay
@@ -664,8 +665,10 @@ public class BlueMouseService extends Service {
 			} else {
 				sGGAMsg = mCurGGAString;
 			}
-			Log.d(TAG, sGGAMsg.trim());
-			write(sGGAMsg.getBytes());
+			if( sGGAMsg != null ) {
+				Log.d(TAG, sGGAMsg.trim());
+				write(sGGAMsg.getBytes());
+			}
 		}
 	}
 
