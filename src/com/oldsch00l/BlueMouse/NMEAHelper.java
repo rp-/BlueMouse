@@ -1,6 +1,7 @@
 package com.oldsch00l.BlueMouse;
 
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -30,8 +31,12 @@ public class NMEAHelper {
 		return checksum;
 	}
 
-	public static DecimalFormat locFormat = new DecimalFormat("0000.####");
-	public static DecimalFormat shortFormat = new DecimalFormat("##.#");
+	public static DecimalFormatSymbols decSymFormat = new DecimalFormatSymbols();
+	static {
+		decSymFormat.setDecimalSeparator('.');
+	}
+	public static DecimalFormat locFormat = new DecimalFormat("0000.######", decSymFormat);
+	public static DecimalFormat shortFormat = new DecimalFormat("##.#", decSymFormat);
 
 	public static SimpleDateFormat HHMMSS = new SimpleDateFormat("HHmmss.000",
 			Locale.UK);
@@ -100,7 +105,7 @@ public class NMEAHelper {
 	 * Returns the correct NMEA position string.
 	 * 
 	 * Android location object returns the data in the format that is not
-	 * excpected by the NMEA data set. We have to multiple the minutes and
+	 * expected by the NMEA data set. We have to multiple the minutes and
 	 * seconds by 60.
 	 * 
 	 * @param degree
