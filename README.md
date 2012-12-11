@@ -27,15 +27,16 @@ Supported devices
 It depends more on the used Android ROM/firmware than on the actual device,
 Currently known to work devices/software versions are:
 
-  * HTC G1/Dream with Cyanogenmod 6
-  * Google Nexus S with stock ROM
-  * HTC Vision/Desire Z with Cyanogenmod 7
-  * LG Optimus P990/2x with Cyanogenmod 7
+  * HTC G1/Dream - Cyanogenmod 6
+  * HTC One S - Stock ROM
+  * HTC Vision/Desire Z - Cyanogenmod 7
+  * Google Nexus S - Stock ROM
+  * LG Optimus P990/2x - Cyanogenmod 7
 
 Known not to work:
 
-  * HTC Desire with stock ROM
-  * LG Optimus P990/2x stock ROM
+  * HTC Desire - Stock ROM
+  * LG Optimus P990/2x - Stock ROM
 
 Instuctions for foolography unleashed
 -------------------------------------
