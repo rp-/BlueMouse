@@ -32,6 +32,7 @@ Currently known to work devices/software versions are:
   * HTC Vision/Desire Z - Cyanogenmod 7
   * Google Nexus S - Stock ROM
   * LG Optimus P990/2x - Cyanogenmod 7
+  * Samsung Galaxy S3 - Stock ROM
 
 Known not to work:
 
