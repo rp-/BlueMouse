@@ -117,6 +117,7 @@ public class BlueMouse extends MapActivity {
 	private BluetoothAdapter mBluetoothAdapter = null;
 	// Member object for the chat services
 	private BlueMouseService mSerialService = null;
+	private static BlueMouseHandler mBlueMouseHandler = null;
 
 	// List of connected device names
 	private List<String> mConnectedDevices = new ArrayList<String>();
@@ -160,6 +161,8 @@ public class BlueMouse extends MapActivity {
 		mLocationOverlay = new MyLocationOverlay(this, mMapView);
 		mMapView.getOverlays().add(mLocationOverlay);
 
+		mBlueMouseHandler = new BlueMouseHandler(this);
+
 		// Get local Bluetooth adapter
 		mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
 
@@ -191,7 +194,7 @@ public class BlueMouse extends MapActivity {
 		public void onServiceConnected(ComponentName name, IBinder service) {
 			mSerialService = ((BlueMouseService.BluetoothSerialBinder) service)
 					.getService();
-			mSerialService.setHandler(mHandler);
+			mSerialService.setHandler(mBlueMouseHandler);
 		}
 
 		@Override
@@ -345,7 +348,17 @@ public class BlueMouse extends MapActivity {
 	}
 
 	// The Handler that gets information back from the BluetoothSerialService
-	private final Handler mHandler = new Handler() {
+	private static class BlueMouseHandler extends Handler {
+		private BlueMouse mBlueMouseAcitivity;
+
+		public BlueMouseHandler(BlueMouse activity) {
+			setBlueMouseActivity(activity);
+		}
+
+		public void setBlueMouseActivity(BlueMouse activity) {
+			mBlueMouseAcitivity = activity;
+		}
+
 		@Override
 		public void handleMessage(Message msg) {
 			switch (msg.what) {
@@ -357,53 +370,53 @@ public class BlueMouse extends MapActivity {
 						}
 						break;
 						case BlueMouseService.STATE_CONNECTING: {
-							mTitle.setText(R.string.title_connecting);
+							mBlueMouseAcitivity.mTitle.setText(R.string.title_connecting);
 						}
 						break;
 						case BlueMouseService.STATE_LISTEN:
 						case BlueMouseService.STATE_NONE: {
-							mTitle.setText(R.string.title_not_connected);
+							mBlueMouseAcitivity.mTitle.setText(R.string.title_not_connected);
 						}
 						break;
 					}
 				}
 				break;
 			case MESSAGE_DEVICES: {
-					mConnectedDevices = msg.getData().getStringArrayList(EXTRA_CONNECTED_DEVICES);
-					updateTitle();
+					mBlueMouseAcitivity.mConnectedDevices = msg.getData().getStringArrayList(EXTRA_CONNECTED_DEVICES);
+					mBlueMouseAcitivity.updateTitle();
 				}
 				break;
 			case MESSAGE_TOAST: {
-				Toast.makeText(getApplicationContext(),
+				Toast.makeText(mBlueMouseAcitivity.getApplicationContext(),
 						msg.getData().getString(TOAST), Toast.LENGTH_SHORT)
 						.show();
 			}
 				break;
 			case MESSAGE_UPDATE_LOC: {
 				String sLoc = msg.getData().getString(EXTRA_CURRENT_LOC);
-				mTVLocation.setText(sLoc);
+				mBlueMouseAcitivity.mTVLocation.setText(sLoc);
 			}
 				break;
 			case MESSAGE_DEVICE_CONNECTED: {
 					String sDevice = msg.getData().getString(EXTRA_DEVICE_NAME);
-					mConnectedDevices.add(sDevice);
-					updateTitle();
-					Toast.makeText(getBaseContext(), String.format("Connected to %s.",
+					mBlueMouseAcitivity.mConnectedDevices.add(sDevice);
+					mBlueMouseAcitivity.updateTitle();
+					Toast.makeText(mBlueMouseAcitivity.getBaseContext(), String.format("Connected to %s.",
 							sDevice), Toast.LENGTH_SHORT).show();
 				}
 				break;
 
 			case MESSAGE_DEVICE_DISCONNECTED: {
 					String sDevice = msg.getData().getString(EXTRA_DEVICE_NAME);
-					mConnectedDevices.remove(sDevice);
-					updateTitle();
-					Toast.makeText(getBaseContext(), String.format("Connection to %s lost.",
+					mBlueMouseAcitivity.mConnectedDevices.remove(sDevice);
+					mBlueMouseAcitivity.updateTitle();
+					Toast.makeText(mBlueMouseAcitivity.getBaseContext(), String.format("Connection to %s lost.",
 							sDevice), Toast.LENGTH_SHORT).show();
 				}
 				break;
 			}
 		}
-	};
+	}
 
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		switch (requestCode) {
