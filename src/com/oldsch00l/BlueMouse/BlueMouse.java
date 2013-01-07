@@ -48,6 +48,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.Editor;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -268,6 +269,7 @@ public class BlueMouse extends MapActivity {
 		// Unbind the BlueMouseService
 		stopLocationUpdates();
 		doUnbindService();
+		stopService(new Intent(this, BlueMouseService.class));
 		super.onDestroy();
 	}
 
@@ -277,12 +279,30 @@ public class BlueMouse extends MapActivity {
 		// connections
 		SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
 		int channel = -1;
+		int update_interval = 2000;
+		try {
+			String supdateinterval = sp.getString("update_interval", "2000");
+			update_interval = Math.abs(Integer.parseInt(supdateinterval));
+			if(update_interval < 250)
+			{
+				update_interval = 250;
+				Editor e = sp.edit();
+				e.putString("update_interval", "250"); // don't allow values lower then 250
+				e.commit();
+			}
+		} catch (NumberFormatException ne) {
+			Editor e = sp.edit();
+			e.putString("update_interval", "2000"); // incorrect input value, reset to 2000
+			e.commit();
+		}
+
 		if( sp.getBoolean("forcechannel", false) )
 		{
 			channel = Integer.parseInt(sp.getString("portnumber", "1"));
 		}
 		Intent i = new Intent(this, BlueMouseService.class);
 		i.putExtra(BlueMouseService.EXTRA_CHANNEL, channel);
+		i.putExtra(BlueMouseService.EXTRA_UPDATE_INTERVAL, update_interval);
 		startService(i);
 	}
 

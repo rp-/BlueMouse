@@ -26,4 +26,8 @@
     <string name="discoverable">Make discoverable</string>
     <string name="settings">Settings</string>
     <string name="exit">Exit</string>
+
+    <!-- Preferences -->
+    <string name="update_interval">Update interval</string>
+    <string name="update_interval_title">Interval in milliseconds</string>
 </resources>

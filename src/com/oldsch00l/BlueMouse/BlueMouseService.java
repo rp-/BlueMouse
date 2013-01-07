@@ -80,6 +80,7 @@ public class BlueMouseService extends Service {
 	private static final String TAG = "BlueMouseService";
 
 	public static final String EXTRA_CHANNEL = "com.oldsch00l.BlueMouse.channel";
+	public static final String EXTRA_UPDATE_INTERVAL = "com.oldsch00l.BlueMouse.update_interval";
 
 	// Name for the SDP record when creating server socket
 	private static final String BT_SERVICE_NAME = "BlueMouse GPS";
@@ -97,6 +98,7 @@ public class BlueMouseService extends Service {
 	private List<ConnectedThread> mConnectedList;
 	//private ConnectedThread mConnectedThread;
 	private int mState;
+	private int mUpdate_interval;
 
 	// private ConnectThread mConnectThread;
 
@@ -146,6 +148,7 @@ public class BlueMouseService extends Service {
 		mAdapter = BluetoothAdapter.getDefaultAdapter();
 		mState = STATE_NONE;
 		mConnectedList = new ArrayList<BlueMouseService.ConnectedThread>();
+		mUpdate_interval = 2000;
 	}
 
 	/**
@@ -290,7 +293,7 @@ public class BlueMouseService extends Service {
 			if(mTimer != null)
 				mTimer.cancel();
 			mTimer = new Timer();
-			mTimer.schedule(mNMEATask, 0, 2000);
+			mTimer.schedule(mNMEATask, 0, mUpdate_interval);
 		}
 	}
 
@@ -636,10 +639,12 @@ public class BlueMouseService extends Service {
 					);
 				message.setData(bundle);
 				mHandler.sendMessage(message);
-				Log.d(TAG, sRMCMsg.trim());
 			}
 			if( sRMCMsg != null )
+			{
+				Log.v(TAG, sRMCMsg.trim());
 				write(sRMCMsg.getBytes());
+			}
 
 
 			// make sure GGA is send after RMC with a 200ms delay
@@ -663,7 +668,7 @@ public class BlueMouseService extends Service {
 				sGGAMsg = mCurGGAString;
 			}
 			if( sGGAMsg != null ) {
-				Log.d(TAG, sGGAMsg.trim());
+				Log.v(TAG, sGGAMsg.trim());
 				write(sGGAMsg.getBytes());
 			}
 		}
@@ -729,7 +734,7 @@ public class BlueMouseService extends Service {
 				String lowerNmea = nmea.toLowerCase(Locale.ENGLISH);
 				if (nmea.startsWith("$GPRMC")) {
 					if(lowerNmea.indexOf(",v,") == -1) {
-						Log.d(TAG, "NMEAListener: " + nmea.trim());
+//						Log.v(TAG, "NMEAListener: " + nmea.trim());
 						mCurRMCString = nmea;
 						return;
 					} else {
@@ -739,7 +744,7 @@ public class BlueMouseService extends Service {
 
 				if (nmea.startsWith("$GPGGA")) {
 					if( lowerNmea.indexOf(",e,") > 0 || lowerNmea.indexOf(",w,") > 0 ) {
-						Log.d(TAG, "NMEAListener: " + nmea.trim());
+//						Log.v(TAG, "NMEAListener: " + nmea.trim());
 						mCurGGAString = nmea;
 						return;
 					} else {
@@ -794,11 +799,13 @@ public class BlueMouseService extends Service {
 	 */
 	@Override
 	public int onStartCommand(Intent intent, int flags, int startId) {
-		Log.d(TAG, "start " + TAG);
-
 		int channel = -1;
-		if( intent != null )
+		mUpdate_interval = 2000;
+		if( intent != null ) {
 			channel = intent.getIntExtra(BlueMouseService.EXTRA_CHANNEL, -1);
+			mUpdate_interval = intent.getIntExtra(BlueMouseService.EXTRA_UPDATE_INTERVAL, 2000);
+		}
+		Log.d(TAG, "starting Service with channel: " + channel + " and update interval: " + mUpdate_interval);
 
 		if (mAcceptThread != null && mAcceptThread.getChannel() != channel) {
 			mAcceptThread.cancel();
@@ -826,10 +833,10 @@ public class BlueMouseService extends Service {
 
 			Log.d(TAG, "request location updates");
 			mLocationManager.requestLocationUpdates(
-					LocationManager.NETWORK_PROVIDER, 2000, 0,
+					LocationManager.NETWORK_PROVIDER, mUpdate_interval, 0,
 					mLocationUpdateListener);
 			mLocationManager.requestLocationUpdates(
-					LocationManager.GPS_PROVIDER, 2000, 0,
+					LocationManager.GPS_PROVIDER, mUpdate_interval, 0,
 					mLocationUpdateListener);
 			mLocationManager.addNmeaListener(mNMEAListener);
 		}
