@@ -469,7 +469,7 @@ public class BlueMouse extends MapActivity {
 			mMapController.animateTo(location);
 		} else {
 			Toast.makeText(this, getString(R.string.currently_no_location),
-					Toast.LENGTH_SHORT);
+					Toast.LENGTH_SHORT).show();
 		}
 	}
 
