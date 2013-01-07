@@ -97,6 +97,7 @@ public class BlueMouse extends MapActivity {
 	// Intent request codes
 	// private static final int REQUEST_CONNECT_DEVICE = 1;
 	private static final int REQUEST_ENABLE_BT = 2;
+	private static final int PREFERENCES_CHANGED = 3;
 
 	// relase commands
 	private static final String FOCUS_CAMERA = "$PFOOR,0,1*45\r\n";
@@ -217,6 +218,7 @@ public class BlueMouse extends MapActivity {
 		if (mIsBound) {
 			// Detach our existing connection.
 			unbindService(mServiceCon);
+			stopService(new Intent(this, BlueMouseService.class));
 			mIsBound = false;
 		}
 	}
@@ -430,6 +432,7 @@ public class BlueMouse extends MapActivity {
 		 * the device mSerialService.connect(device); } break;
 		 */
 		case REQUEST_ENABLE_BT:
+		{
 			// When the request to enable Bluetooth returns
 			if (resultCode == Activity.RESULT_OK) {
 				// Bluetooth is now enabled, we can start the service
@@ -439,10 +442,22 @@ public class BlueMouse extends MapActivity {
 				Log.d(TAG, "BT not enabled");
 				Toast.makeText(this, R.string.bt_not_enabled_leaving,
 						Toast.LENGTH_SHORT).show();
-				stopService(new Intent(this, BlueMouseService.class));
+				stopLocationUpdates();
+				doUnbindService();
 				finish();
 			}
+		} break;
+		case PREFERENCES_CHANGED:
+		{
+			restartService();
+		} break;
 		}
+	}
+
+	protected void restartService() {
+		doUnbindService();
+		doBindService();
+		startBlueMouseService();
 	}
 
 	@Override
@@ -463,12 +478,12 @@ public class BlueMouse extends MapActivity {
 		case R.id.menu_settings: {
 			Intent settingsActivity = new Intent(getBaseContext(),
                     Preferences.class);
-			startActivity(settingsActivity);
+			startActivityForResult(settingsActivity, PREFERENCES_CHANGED);
 			return true;
 		}
 		case R.id.menu_exit: {
 			stopLocationUpdates();
-			stopService(new Intent(this, BlueMouseService.class));
+			doUnbindService();
 			finish();
 			return true;
 		}
