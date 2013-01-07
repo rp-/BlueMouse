@@ -44,6 +44,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -729,7 +730,7 @@ public class BlueMouseService extends Service {
 
 			@Override
 			public void onNmeaReceived(long timestamp, String nmea) {
-				String lowerNmea = nmea.toLowerCase();
+				String lowerNmea = nmea.toLowerCase(Locale.ENGLISH);
 				if (nmea.startsWith("$GPRMC")) {
 					if(lowerNmea.indexOf(",v,") == -1) {
 						Log.d(TAG, "NMEAListener: " + nmea.trim());
