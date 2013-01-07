@@ -266,10 +266,8 @@ public class BlueMouse extends MapActivity {
 
 	@Override
 	public void onDestroy() {
-		// Unbind the BlueMouseService
 		stopLocationUpdates();
-		doUnbindService();
-		stopService(new Intent(this, BlueMouseService.class));
+		//unbind only if we get killed from the exit menu
 		super.onDestroy();
 	}
 
