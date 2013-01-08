@@ -340,9 +340,6 @@ public class BlueMouse extends MapActivity {
 		mTimer.schedule(new SendStringTask(RELEASE_SHUTTER), 1500);
 	}
 
-	// public static SimpleDateFormat LogDate = new
-	// SimpleDateFormat("HH:mm:ss");
-
 	private static String stripUnleashedAddress(String sDeviceName) {
 		String sStripped = sDeviceName;
 		if (sDeviceName != null) {
@@ -440,35 +437,26 @@ public class BlueMouse extends MapActivity {
 
 	public void onActivityResult(int requestCode, int resultCode, Intent data) {
 		switch (requestCode) {
-		/*
-		 * case REQUEST_CONNECT_DEVICE: // When DeviceListActivity returns with
-		 * a device to connect if (resultCode == Activity.RESULT_OK) { // Get
-		 * the device MAC address String address = data.getExtras()
-		 * .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS); // Get the
-		 * BLuetoothDevice object BluetoothDevice device =
-		 * mBluetoothAdapter.getRemoteDevice(address); // Attempt to connect to
-		 * the device mSerialService.connect(device); } break;
-		 */
-		case REQUEST_ENABLE_BT:
-		{
-			// When the request to enable Bluetooth returns
-			if (resultCode == Activity.RESULT_OK) {
-				// Bluetooth is now enabled, we can start the service
-				startBlueMouseService();
-			} else {
-				// User did not enable Bluetooth or an error occured
-				Log.d(TAG, "BT not enabled");
-				Toast.makeText(this, R.string.bt_not_enabled_leaving,
-						Toast.LENGTH_SHORT).show();
-				stopLocationUpdates();
-				doUnbindService();
-				finish();
-			}
-		} break;
-		case PREFERENCES_CHANGED:
-		{
-			restartService();
-		} break;
+			case REQUEST_ENABLE_BT:
+			{
+				// When the request to enable Bluetooth returns
+				if (resultCode == Activity.RESULT_OK) {
+					// Bluetooth is now enabled, we can start the service
+					startBlueMouseService();
+				} else {
+					// User did not enable Bluetooth or an error occured
+					Log.d(TAG, "BT not enabled");
+					Toast.makeText(this, R.string.bt_not_enabled_leaving,
+							Toast.LENGTH_SHORT).show();
+					stopLocationUpdates();
+					doUnbindService();
+					finish();
+				}
+			} break;
+			case PREFERENCES_CHANGED:
+			{
+				restartService();
+			} break;
 		}
 	}
 
