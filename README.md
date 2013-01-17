@@ -19,7 +19,8 @@ Requirements
 
   * An android device with Bluetooth, GPS or network location positioning
   * Android version 2.0 or above
-    Android version 1.* don't have a prober Bluetooth API.
+
+    Android version 1.* doesn't have a prober Bluetooth API.
 
 Settings
 --------
@@ -27,12 +28,17 @@ Settings
 There are currently 3 settings:
 
   * Force serial port number
+
     You need to set this to use the software with foolography unleashed.
     If you don't force the serial port number a free port will be choosen
     from android and advertised via the SDP protocol.
+
   * Serial port number
+
     Force the serial port number and use channel 1 for foolography.
+
   * Update interval
+
     Interval for sending NMEA sentences to the connected devices.
     Minimum setting is 250ms, but actually there is not much sense in
     setting it below 1000ms.
