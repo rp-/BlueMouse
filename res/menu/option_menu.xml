@@ -14,12 +14,19 @@
      limitations under the License.
 -->
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:id="@+id/menu_mylocation"
+        android:title="@string/mylocation"
+		android:icon="@android:drawable/ic_menu_mylocation"
+		android:showAsAction="ifRoom" />
     <item android:id="@+id/discoverable"
-          android:icon="@android:drawable/ic_menu_mylocation"
-          android:title="@string/discoverable" />
+          android:icon="@android:drawable/ic_menu_view"
+          android:title="@string/discoverable"
+          android:showAsAction="ifRoom" />
     <item android:id="@+id/menu_settings"
           android:title="@string/settings"
           android:icon="@android:drawable/ic_menu_preferences" />
-    <item android:title="@string/exit" android:id="@+id/menu_exit"
-    	android:icon="@drawable/ic_lock_power_off"/>
+    <item android:id="@+id/menu_exit"
+        android:title="@string/exit"
+		android:icon="@drawable/ic_lock_power_off"
+		android:showAsAction="always" />
 </menu>

@@ -49,6 +49,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.Editor;
+import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -61,7 +62,9 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.Window;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -92,8 +95,12 @@ public class BlueMouse extends MapActivity {
 	public static final String TOAST = "Toast";
 
 	public static final String EXTRA_DEVICE_NAME = "device_name";
-	public static final String EXTRA_CURRENT_LOC = "CURRENT_LOC";
+	public static final String EXTRA_DEVICE_ADDRESS = "device_address";
+	public static final String EXTRA_GPS_SOURCE = "GPSSOURCE";
+	public static final String EXTRA_LATITUDE = "LATITUDE";
+	public static final String EXTRA_LONGITUDE = "LONTITUDE";
 	public static final String EXTRA_CONNECTED_DEVICES = "CONNECTED_DEVICES";
+	public static final String EXTRA_CONNECTED_DEVICES_ADDR = "CONNECTED_DEVICES_ADDR";
 
 	// Intent request codes
 	// private static final int REQUEST_CONNECT_DEVICE = 1;
@@ -106,14 +113,15 @@ public class BlueMouse extends MapActivity {
 	private static final String RELEASE_SHUTTER = "$PFOOR,0,0*44\r\n";
 
 	// Layout Views
-	private TextView mTitle;
-	private TextView mTVLocation;
-	private Button mRelaseCameraButton;
+	private TextView mInfoTextview;
+	private ListView mConnectedList;
+//	private Button mRelaseCameraButton;
 
 	// Map stuff
 	private MapController mMapController;
 	private MapView mMapView;
 	private MyLocationOverlay mLocationOverlay;
+	private Location mCurrentLocation;
 
 	// Local Bluetooth adapter
 	private BluetoothAdapter mBluetoothAdapter = null;
@@ -122,7 +130,7 @@ public class BlueMouse extends MapActivity {
 	private static BlueMouseHandler mBlueMouseHandler = null;
 
 	// List of connected device names
-	private List<String> mConnectedDevices = new ArrayList<String>();
+	private ArrayAdapter<String> mConnectedAdapter;
 
 	// Timer stuff
 	private Timer mTimer = new Timer();
@@ -132,26 +140,22 @@ public class BlueMouse extends MapActivity {
 		super.onCreate(savedInstanceState);
 
 		// Set up the window layout
-		requestWindowFeature(Window.FEATURE_CUSTOM_TITLE);
 		setContentView(R.layout.main);
-		getWindow().setFeatureInt(Window.FEATURE_CUSTOM_TITLE,
-				R.layout.custom_title);
 
 		// release button action
-		mRelaseCameraButton = (Button) findViewById(R.id.button_release_camera);
-		mRelaseCameraButton.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				releaseCamera();
-			}
-		});
-
-		// Set up the custom title
-		mTitle = (TextView) findViewById(R.id.title_left_text);
-		mTitle.setText(R.string.app_name);
-		mTitle = (TextView) findViewById(R.id.title_right_text);
+//		mRelaseCameraButton = (Button) findViewById(R.id.button_release_camera);
+//		mRelaseCameraButton.setOnClickListener(new OnClickListener() {
+//			public void onClick(View v) {
+//				releaseCamera();
+//			}
+//		});
 
 		// Current location Textview
-		mTVLocation = (TextView) findViewById(R.id.tvCurrentLoc);
+		mConnectedList = (ListView) findViewById(R.id.listViewConnected);
+		mInfoTextview = (TextView) findViewById(R.id.textViewInfo);
+
+		mConnectedAdapter = new ArrayAdapter<String>(this, R.layout.connected_item);
+		mConnectedList.setAdapter(mConnectedAdapter);
 
 		// map activity
 		mMapView = (MapView) findViewById(R.id.mapview);
@@ -188,6 +192,10 @@ public class BlueMouse extends MapActivity {
 	private void stopLocationUpdates() {
 		mLocationOverlay.disableCompass();
 		mLocationOverlay.disableMyLocation();
+	}
+
+	public void setLocation(Location l) {
+		mCurrentLocation = l;
 	}
 
 	private boolean mIsBound;
@@ -340,40 +348,51 @@ public class BlueMouse extends MapActivity {
 		mTimer.schedule(new SendStringTask(RELEASE_SHUTTER), 1500);
 	}
 
-	private static String stripUnleashedAddress(String sDeviceName) {
-		String sStripped = sDeviceName;
-		if (sDeviceName != null) {
-			if (sDeviceName.startsWith("Unleashed"))
-			{
-				 sStripped = sDeviceName.substring(
-						0, sDeviceName.lastIndexOf(' '));
-			}
+//	private static String stripUnleashedAddress(String sDeviceName) {
+//		String sStripped = sDeviceName;
+//		if (sDeviceName != null) {
+//			if (sDeviceName.startsWith("Unleashed"))
+//			{
+//				 sStripped = sDeviceName.substring(
+//						0, sDeviceName.lastIndexOf(' '));
+//			}
+//		}
+//		return sStripped;
+//	}
+
+	public void updateInfoText() {
+		StringBuffer sb = new StringBuffer();
+		if( mCurrentLocation != null ) {
+			sb.append("Location Source:\n");
+			sb.append(mCurrentLocation.getProvider());
+			sb.append("\n");
+			sb.append("Latitude:\n");
+			sb.append(String.format("%.4f", mCurrentLocation.getLatitude()));
+			sb.append("\n");
+			sb.append("Longitude:\n");
+			sb.append(String.format("%.4f", mCurrentLocation.getLongitude()));
 		}
-		return sStripped;
+		mInfoTextview.setText(sb.toString());
 	}
 
-	private void updateTitle() {
-		String sTitle = getString(R.string.title_not_connected);
-		if(mConnectedDevices.size() > 0) {
-			sTitle = getString(R.string.title_connected_to) + " ";
-			sTitle += stripUnleashedAddress(mConnectedDevices.get(0));
-			for(int i = 1; i < mConnectedDevices.size(); i++) {
-				sTitle += ", " + stripUnleashedAddress(mConnectedDevices.get(i));
-			}
+	private void setConnectedList(List<String> devices, List<String> addresses) {
+		mConnectedAdapter.clear();
+		for(String dev: devices) {
+			mConnectedAdapter.add(dev);
 		}
-		mTitle.setText(sTitle);
+		mConnectedList.refreshDrawableState();
 	}
 
 	// The Handler that gets information back from the BluetoothSerialService
 	private static class BlueMouseHandler extends Handler {
-		private BlueMouse mBlueMouseAcitivity;
+		private BlueMouse mBlueMouseActivity;
 
 		public BlueMouseHandler(BlueMouse activity) {
 			setBlueMouseActivity(activity);
 		}
 
 		public void setBlueMouseActivity(BlueMouse activity) {
-			mBlueMouseAcitivity = activity;
+			mBlueMouseActivity = activity;
 		}
 
 		@Override
@@ -382,52 +401,41 @@ public class BlueMouse extends MapActivity {
 			case MESSAGE_STATE_CHANGE: {
 					Log.d(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
 
-					switch (msg.arg1) {
-						case BlueMouseService.STATE_CONNECTED: {
-						}
-						break;
-						case BlueMouseService.STATE_CONNECTING: {
-							mBlueMouseAcitivity.mTitle.setText(R.string.title_connecting);
-						}
-						break;
-						case BlueMouseService.STATE_LISTEN:
-						case BlueMouseService.STATE_NONE: {
-							mBlueMouseAcitivity.mTitle.setText(R.string.title_not_connected);
-						}
-						break;
-					}
+					mBlueMouseActivity.updateInfoText();
 				}
 				break;
 			case MESSAGE_DEVICES: {
-					mBlueMouseAcitivity.mConnectedDevices = msg.getData().getStringArrayList(EXTRA_CONNECTED_DEVICES);
-					mBlueMouseAcitivity.updateTitle();
+					mBlueMouseActivity.setConnectedList(
+							msg.getData().getStringArrayList(EXTRA_CONNECTED_DEVICES),
+							msg.getData().getStringArrayList(EXTRA_CONNECTED_DEVICES_ADDR));
 				}
 				break;
 			case MESSAGE_TOAST: {
-				Toast.makeText(mBlueMouseAcitivity.getApplicationContext(),
+				Toast.makeText(mBlueMouseActivity.getApplicationContext(),
 						msg.getData().getString(TOAST), Toast.LENGTH_SHORT)
 						.show();
 			}
 				break;
 			case MESSAGE_UPDATE_LOC: {
-				String sLoc = msg.getData().getString(EXTRA_CURRENT_LOC);
-				mBlueMouseAcitivity.mTVLocation.setText(sLoc);
+				Location loc = new Location(msg.getData().getString(EXTRA_GPS_SOURCE));
+				loc.setLatitude(msg.getData().getDouble(EXTRA_LATITUDE));
+				loc.setLongitude(msg.getData().getDouble(EXTRA_LONGITUDE));
+				mBlueMouseActivity.setLocation(loc);
+				mBlueMouseActivity.updateInfoText();
 			}
 				break;
 			case MESSAGE_DEVICE_CONNECTED: {
 					String sDevice = msg.getData().getString(EXTRA_DEVICE_NAME);
-					mBlueMouseAcitivity.mConnectedDevices.add(sDevice);
-					mBlueMouseAcitivity.updateTitle();
-					Toast.makeText(mBlueMouseAcitivity.getBaseContext(), String.format("Connected to %s.",
+					mBlueMouseActivity.mConnectedAdapter.add(sDevice);
+					Toast.makeText(mBlueMouseActivity.getBaseContext(), String.format("Connected to %s.",
 							sDevice), Toast.LENGTH_SHORT).show();
 				}
 				break;
 
 			case MESSAGE_DEVICE_DISCONNECTED: {
 					String sDevice = msg.getData().getString(EXTRA_DEVICE_NAME);
-					mBlueMouseAcitivity.mConnectedDevices.remove(sDevice);
-					mBlueMouseAcitivity.updateTitle();
-					Toast.makeText(mBlueMouseAcitivity.getBaseContext(), String.format("Connection to %s lost.",
+					mBlueMouseActivity.mConnectedAdapter.remove(sDevice);
+					Toast.makeText(mBlueMouseActivity.getBaseContext(), String.format("Connection to %s lost.",
 							sDevice), Toast.LENGTH_SHORT).show();
 				}
 				break;
@@ -485,6 +493,10 @@ public class BlueMouse extends MapActivity {
 			Intent settingsActivity = new Intent(getBaseContext(),
                     Preferences.class);
 			startActivityForResult(settingsActivity, PREFERENCES_CHANGED);
+			return true;
+		}
+		case R.id.menu_mylocation: {
+			zoomToPosition(null);
 			return true;
 		}
 		case R.id.menu_exit: {

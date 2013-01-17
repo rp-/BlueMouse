@@ -10,11 +10,13 @@
     <string name="title_connected_to">connected to</string>
     <string name="title_not_connected">not connected</string>
     <string name="currently_no_location">Unable to determine your current position.</string>
+    <string name="connected">Connected:</string>
     
     <!-- Options Menu -->
     <string name="discoverable">Make discoverable</string>
     <string name="settings">Settings</string>
     <string name="exit">Exit</string>
+    <string name="mylocation">Show my location</string>
 
     <!-- Preferences -->
     <string name="update_interval">Update interval</string>

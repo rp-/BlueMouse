@@ -19,35 +19,53 @@
 	android:layout_width="fill_parent"
 	android:layout_height="fill_parent"
 	>
+
 		<LinearLayout
-			android:orientation="horizontal"
-			android:layout_width="fill_parent"
-			android:layout_height="wrap_content"
-			>
-			<Button android:id="@+id/button_release_camera"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:text="@string/release_camera"
-			/>
+		    android:layout_width="match_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_weight="0.6"
+		    android:minHeight="400dp" >
+
 			<TextView
-				android:text=""
-				android:id="@+id/tvCurrentLoc"
-				android:layout_width="0dip"
-				android:layout_weight="1"
-				android:layout_height="fill_parent"
-				android:textAppearance="?android:attr/textAppearanceSmall"/>
-			<Button android:id="@+id/button_show_position"
-				android:layout_width="wrap_content"
-				android:layout_height="wrap_content"
-				android:drawableLeft="@drawable/my_location"
-				android:onClick="zoomToPosition" android:layout_gravity="top"/>
+			    android:id="@+id/textViewInfo"
+			    android:layout_width="match_parent"
+			    android:layout_height="match_parent"
+			    android:layout_weight="0.5"
+			    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+			<LinearLayout
+			    android:layout_width="match_parent"
+			    android:layout_height="match_parent"
+			    android:layout_weight="0.5"
+			    android:orientation="vertical" >
+
+				<TextView
+				    android:id="@+id/textView1"
+				    android:layout_width="wrap_content"
+				    android:layout_height="wrap_content"
+				    android:layout_weight="0.1"
+				    android:text="@string/connected"
+				    android:textAppearance="?android:attr/textAppearanceMedium" />
+
+				<ListView
+				    android:id="@+id/listViewConnected"
+				    android:layout_width="match_parent"
+				    android:layout_height="match_parent"
+				    android:layout_weight="0.9" >
+				</ListView>
+
+			</LinearLayout>
+
 		</LinearLayout>
+
 		<com.google.android.maps.MapView
-		     xmlns:android="http://schemas.android.com/apk/res/android"
-		     android:id="@+id/mapview"
-		     android:layout_width="fill_parent"
-		     android:layout_height="fill_parent"
-		     android:clickable="true"
-		     android:apiKey="0-S3S1-tc6iI53JJclvDdZW9zCyxxjIXM8vD8Ig"
-		 />
+		    xmlns:android="http://schemas.android.com/apk/res/android"
+		    android:id="@+id/mapview"
+		    android:layout_width="fill_parent"
+		    android:layout_height="wrap_content"
+		    android:layout_weight="0.4"
+		    android:apiKey="0-S3S1-tc6iI53JJclvDdZW9zCyxxjIXM8vD8Ig"
+		    android:clickable="true"
+		    android:minHeight="200dp" />
+
 </LinearLayout>

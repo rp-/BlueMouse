@@ -192,10 +192,13 @@ public class BlueMouseService extends Service {
 		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICES);
 		Bundle bundle = new Bundle();
 		ArrayList<String> deviceNames = new ArrayList<String>();
+		ArrayList<String> deviceAddresses = new ArrayList<String>();
 		for(ConnectedThread conn : mConnectedList) {
 			deviceNames.add(conn.getSocket().getRemoteDevice().getName());
+			deviceAddresses.add(conn.getSocket().getRemoteDevice().getAddress());
 		}
 		bundle.putStringArrayList(BlueMouse.EXTRA_CONNECTED_DEVICES, deviceNames);
+		bundle.putStringArrayList(BlueMouse.EXTRA_CONNECTED_DEVICES_ADDR, deviceAddresses);
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 	}
@@ -221,18 +224,12 @@ public class BlueMouseService extends Service {
 		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICE_CONNECTED);
 		Bundle bundle = new Bundle();
 		bundle.putString(BlueMouse.EXTRA_DEVICE_NAME, device.getName());
+		bundle.putString(BlueMouse.EXTRA_DEVICE_ADDRESS, device.getAddress());
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 
 		if(getState() != STATE_CONNECTED) {
 			setState(STATE_CONNECTED);
-
-			mNMEATask.cancel();
-			mNMEATask = new NMEATask();
-			if(mTimer != null)
-				mTimer.cancel();
-			mTimer = new Timer();
-			mTimer.schedule(mNMEATask, 0, mUpdate_interval);
 		}
 	}
 
@@ -262,6 +259,7 @@ public class BlueMouseService extends Service {
 		Message msg = mHandler.obtainMessage(BlueMouse.MESSAGE_DEVICE_DISCONNECTED);
 		Bundle bundle = new Bundle();
 		bundle.putString(BlueMouse.EXTRA_DEVICE_NAME, conn.getSocket().getRemoteDevice().getName());
+		bundle.putString(BlueMouse.EXTRA_DEVICE_ADDRESS, conn.getSocket().getRemoteDevice().getAddress());
 		msg.setData(bundle);
 		mHandler.sendMessage(msg);
 
@@ -272,7 +270,6 @@ public class BlueMouseService extends Service {
 			if (mTimer != null) {
 				mTimer.cancel();
 			}
-			mNMEATask.cancel();
 			setState(STATE_LISTEN);
 		}
 	}
@@ -500,13 +497,12 @@ public class BlueMouseService extends Service {
 			if(mCurLocation != null) {
 				Message message = mHandler.obtainMessage(BlueMouse.MESSAGE_UPDATE_LOC);
 				Bundle bundle = new Bundle();
-				bundle.putString(BlueMouse.EXTRA_CURRENT_LOC,
-						String.format(
-							"LAT: %.4f\nLONG: %.4f",
-							mCurLocation.getLatitude(),
-							mCurLocation.getLongitude()
-						)
-					);
+				if( mCurRMCString != null )
+					bundle.putString(BlueMouse.EXTRA_GPS_SOURCE, "GPS");
+				else
+					bundle.putString(BlueMouse.EXTRA_GPS_SOURCE, "NETWORK");
+				bundle.putDouble(BlueMouse.EXTRA_LATITUDE, mCurLocation.getLatitude());
+				bundle.putDouble(BlueMouse.EXTRA_LONGITUDE, mCurLocation.getLongitude());
 				message.setData(bundle);
 				mHandler.sendMessage(message);
 			}
@@ -645,6 +641,8 @@ public class BlueMouseService extends Service {
 		}
 		setState(STATE_NONE);
 
+		mNMEATask.cancel();
+
 		// Cancel the notification
 		mNM.cancel(NOTIFICATION_ID);
 	}
@@ -684,6 +682,13 @@ public class BlueMouseService extends Service {
 					mLocationUpdateListener);
 			mLocationManager.addNmeaListener(mNMEAListener);
 		}
+
+		mNMEATask.cancel();
+		mNMEATask = new NMEATask();
+		if(mTimer != null)
+			mTimer.cancel();
+		mTimer = new Timer();
+		mTimer.schedule(mNMEATask, 0, mUpdate_interval);
 
 		return START_STICKY;
 	}
