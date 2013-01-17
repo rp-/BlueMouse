@@ -442,7 +442,7 @@ public class BlueMouse extends MapActivity {
 				// When the request to enable Bluetooth returns
 				if (resultCode == Activity.RESULT_OK) {
 					// Bluetooth is now enabled, we can start the service
-					startBlueMouseService();
+					restartService();
 				} else {
 					// User did not enable Bluetooth or an error occured
 					Log.d(TAG, "BT not enabled");
